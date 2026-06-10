@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor - Χρήστος Κουλαξίζης</title>
+    
+    <!-- No Google Fonts - System fonts only -->
+    
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Meta Tags for Privacy -->
+    <meta name="description" content="Minimal Markdown Editor - No tracking, no ads, open source">
+    <meta name="keywords" content="markdown, editor, open-source, privacy, minimal">
+</head>
+<body class="theme-light">
+    
+    <!-- Language & Theme Toggle Bar -->
+    <header class="top-bar">
+        <div class="left-section">
+            <button id="lang-toggle" class="icon-btn" title="Switch Language">EL/EN</button>
+            <button id="theme-toggle" class="icon-btn" title="Toggle Theme">☀️/🌙</button>
+        </div>
+        <h1 id="page-title">Markdown Editor</h1>
+        <div class="right-section">
+            <button id="cheatsheet-btn" class="icon-btn" title="Markdown Cheat Sheet">?</button>
+        </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="mode-group">
+            <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
+            <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
+            <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
+        </div>
+        <div class="export-group">
+            <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
+            <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
+            <button id="export-pdf" class="btn" data-lang-key="exportPDF">PDF</button>
+        </div>
+    </div>
+
+    <!-- Random Tip Banner -->
+    <div id="tip-banner" class="tip-banner hidden">
+        <span id="tip-text"></span>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-container">
+        <!-- Edit Panel -->
+        <div id="edit-panel" class="panel active">
+            <textarea 
+                id="editor" 
+                class="editor-textarea" 
+                placeholder="Γράψε το markdown εδώ..."
+                spellcheck="false"
+            ></textarea>
+        </div>
+
+        <!-- Preview Panel -->
+        <div id="preview-panel" class="panel">
+            <div id="preview-content" class="preview-wrapper"></div>
+        </div>
+		<!-- Στο αρχείο index.html, μέσα στο tag <main>, πρόσθεσε αυτό πριν τον closing tag </main> -->
+    
+    <!-- Status Bar for Stats -->
+    <div id="stats-bar" class="stats-bar">
+        <span><strong><span id="char-count">0</span></strong> <span data-lang-key="chars">χαρακτήρες</span></span>
+        <span>|</span>
+        <span><strong><span id="word-count">0</span></strong> <span data-lang-key="words">λέξεις</span></span>
+        <span>|</span>
+        <span><strong><span id="para-count">0</span></strong> <span data-lang-key="paragraphs">παράγραφοι</span></span>
+    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-main">
+            <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
+        </div>
+        <div class="footer-sub">
+            <span>No cookies • No tracking • No ads • No Sponsors</span>
+        </div>
+        <div class="footer-legal">
+            <span>Licensed under MIT</span>
+            <span>•</span>
+            <span>Open Source</span>
+            <span>•</span>
+            <span>Privacy First</span>
+            <span>•</span>
+            <span>Minimal Design</span>
+        </div>
+    </footer>
+
+    <!-- Cheatsheet Modal -->
+    <div id="cheatsheet-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-lang-key="cheatSheetTitle">Cheat Sheet Markdown</h2>
+                <button id="close-cheatsheet" class="close-btn">&times;</button>
+            </div>
+            <div id="cheatsheet-body" class="cheatsheet-body">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Script -->
+    <script src="script.js"></script>
+</body>
+</html>
