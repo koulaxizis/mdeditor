@@ -107,11 +107,11 @@ const tips = {
 // =============================================
 // DOM ELEMENTS
 // =============================================
-const editor = document.getElementById('editor');
+let editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
 const pageTitle = document.getElementById('page-title');
-const mainContainer = document.querySelector('.main-container');
+const formatBar = document.getElementById('format-bar');
 
 // Buttons & Controls
 const langToggle = document.getElementById('lang-toggle');
@@ -131,7 +131,6 @@ const tipBanner = document.getElementById('tip-banner');
 const tipText = document.getElementById('tip-text');
 const mdStatsToggle = document.getElementById('md-stats-toggle');
 const autoCloseToggle = document.getElementById('auto-close-toggle');
-const formatBar = document.getElementById('format-bar');
 
 // Stats Elements
 const charCountEl = document.getElementById('char-count');
@@ -176,51 +175,50 @@ function init() {
     updatePreview();
     updateStats();
     
-    // Setup event listeners
+    // Setup event listeners (ONLY ONCE!)
     setupEventListeners();
 }
 
 // =============================================
-// EVENT LISTENERS SETUP
+// EVENT LISTENERS SETUP - CENTRALIZED
 // =============================================
 function setupEventListeners() {
-    // Editor input - save content, update preview & stats
+    // =================== EDITOR INPUT ===================
     editor.addEventListener('input', () => {
         localStorage.setItem(STORAGE_KEY, editor.value);
         updatePreview();
         updateStats();
     });
     
-    // Show format bar on focus
+    // =================== FORMAT BAR ===================
     editor.addEventListener('focus', () => {
         if (formatBar) formatBar.classList.remove('hidden');
     });
     
-    // Hide format bar on blur (optional)
     editor.addEventListener('blur', () => {
         if (formatBar) formatBar.classList.add('hidden');
     });
     
-    // Theme Toggle
+    // =================== THEME TOGGLE ===================
     themeToggle.addEventListener('click', () => {
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         applyTheme(newTheme);
     });
     
-    // Language Toggle
+    // =================== LANGUAGE TOGGLE ===================
     langToggle.addEventListener('click', () => {
         const newLang = currentLanguage === 'el' ? 'en' : 'el';
         applyLanguage(newLang);
     });
     
-    // View Modes
+    // =================== VIEW MODES ===================
     if (modeEdit) modeEdit.addEventListener('click', () => setViewMode('edit'));
     if (modeLive) modeLive.addEventListener('click', () => setViewMode('live'));
     if (modePreview) modePreview.addEventListener('click', () => setViewMode('preview'));
     if (modeSplit) modeSplit.addEventListener('click', () => setViewMode('split'));
     if (modeFocus) modeFocus.addEventListener('click', () => toggleFocusMode());
     
-    // Stats Toggle
+    // =================== STATS TOGGLE ===================
     if (mdStatsToggle) {
         mdStatsToggle.addEventListener('change', (e) => {
             currentStatsMode = e.target.checked ? 'md-clean' : 'raw';
@@ -229,7 +227,7 @@ function setupEventListeners() {
         });
     }
     
-    // Auto-Close Toggle
+    // =================== AUTO-CLOSE TOGGLE ===================
     if (autoCloseToggle) {
         autoCloseToggle.addEventListener('change', (e) => {
             autoCloseEnabled = e.target.checked;
@@ -237,12 +235,12 @@ function setupEventListeners() {
         });
     }
     
-    // Export Buttons
+    // =================== EXPORT BUTTONS ===================
     if (exportMd) exportMd.addEventListener('click', () => downloadFile(editor.value, 'document.md', 'text/markdown'));
     if (exportTxt) exportTxt.addEventListener('click', () => downloadFile(editor.value, 'document.txt', 'text/plain'));
     if (exportPdf) exportPdf.addEventListener('click', () => window.print());
     
-    // Cheatsheet Modal
+    // =================== CHEATSHEET MODAL ===================
     if (cheatsheetBtn) cheatsheetBtn.addEventListener('click', () => {
         populateCheatsheet();
         if (cheatsheetModal) cheatsheetModal.classList.remove('hidden');
@@ -258,11 +256,7 @@ function setupEventListeners() {
         }
     });
     
-    // =============================================
-    // TRUE LIVE MODE LOGIC (Click-to-Edit)
-    // =============================================
-    
-    // Click on preview panel → enter edit mode (show textarea overlay)
+    // =================== TRUE LIVE MODE LOGIC ===================
     if (preview && preview.parentElement) {
         preview.parentElement.addEventListener('click', (e) => {
             if (pageBody.classList.contains('live-mode') && 
@@ -282,7 +276,6 @@ function setupEventListeners() {
         });
     }
     
-    // Blur from editor in live mode → exit edit mode (show preview)
     if (editor) {
         editor.addEventListener('blur', (e) => {
             if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
@@ -298,79 +291,68 @@ function setupEventListeners() {
                 }, 150);
             }
         });
-    }
-    
-    // Escape key exits Live Edit Mode
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
-                cheatsheetModal.classList.add('hidden');
-            }
-            
-            if (pageBody.classList.contains('focus-mode')) {
-                toggleFocusMode();
-            }
-            
-            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
-                pageBody.classList.remove('live-editing');
-                e.preventDefault();
-            }
-        }
         
-        // Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+K)
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'b' || e.key === 'B') {
-                e.preventDefault();
-                insertFormat('**');
-            }
-            if (e.key === 'i' || e.key === 'I') {
-                e.preventDefault();
-                insertFormat('*');
-            }
-            if (e.key === 'k' || e.key === 'K') {
-                e.preventDefault();
-                insertFormat('[link](https://example.com)');
-            }
-            if (e.key === 'h' || e.key === 'H') {
-                e.preventDefault();
-                insertFormat('# ');
-            }
-        }
-    });
-    
-    // Auto-Close Brackets Logic
-    if (editor) {
+        // =================== KEYBOARD SHORTCUTS & AUTO-CLOSE ===================
         editor.addEventListener('keydown', (e) => {
-            if (!autoCloseEnabled) return;
+            // ESCAPE KEY
+            if (e.key === 'Escape') {
+                if (pageBody.classList.contains('focus-mode')) {
+                    toggleFocusMode();
+                }
+                if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
+                    pageBody.classList.remove('live-editing');
+                    e.preventDefault();
+                }
+                return;
+            }
             
-            const pairs = {
-                '(': ')',
-                '[': ']',
-                '{': '}',
-                '"': '"',
-                "'": "'",
-                '`': '`'
-            };
+            // AUTO-CLOSE BRACKETS
+            if (autoCloseEnabled) {
+                const pairs = {
+                    '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`'
+                };
+                
+                if (pairs[e.key]) {
+                    e.preventDefault();
+                    const startPos = editor.selectionStart;
+                    const endPos = editor.selectionEnd;
+                    const text = editor.value;
+                    const before = text.substring(0, startPos);
+                    const selected = text.substring(startPos, endPos);
+                    const after = text.substring(endPos);
+                    
+                    const closingChar = pairs[e.key];
+                    editor.value = before + e.key + selected + closingChar + after;
+                    
+                    editor.selectionStart = startPos + 1;
+                    editor.selectionEnd = startPos + 1 + selected.length;
+                    editor.focus();
+                    
+                    updatePreview();
+                    updateStats();
+                    localStorage.setItem(STORAGE_KEY, editor.value);
+                    return;
+                }
+            }
             
-            if (pairs[e.key]) {
-                e.preventDefault();
-                const startPos = editor.selectionStart;
-                const endPos = editor.selectionEnd;
-                const text = editor.value;
-                const before = text.substring(0, startPos);
-                const selected = text.substring(startPos, endPos);
-                const after = text.substring(endPos);
-                
-                const closingChar = pairs[e.key];
-                editor.value = before + e.key + selected + closingChar + after;
-                
-                editor.selectionStart = startPos + 1;
-                editor.selectionEnd = startPos + 1 + selected.length;
-                
-                editor.focus();
-                updatePreview();
-                updateStats();
-                localStorage.setItem(STORAGE_KEY, editor.value);
+            // KEYBOARD SHORTCUTS (Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+H)
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key.toLowerCase() === 'b') {
+                    e.preventDefault();
+                    insertFormat('**');
+                }
+                if (e.key.toLowerCase() === 'i') {
+                    e.preventDefault();
+                    insertFormat('*');
+                }
+                if (e.key.toLowerCase() === 'k') {
+                    e.preventDefault();
+                    insertFormat('[link](https://example.com)');
+                }
+                if (e.key.toLowerCase() === 'h') {
+                    e.preventDefault();
+                    insertFormat('# ');
+                }
             }
         });
     }
@@ -417,7 +399,7 @@ function applyLanguage(lang) {
 }
 
 // =============================================
-// VIEW MODE HANDLER (UPDATED for True Live)
+// VIEW MODE HANDLER
 // =============================================
 function setViewMode(mode) {
     pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing');
@@ -548,9 +530,11 @@ function populateCheatsheet() {
 }
 
 // =============================================
-// FORMAT BUTTON INSERT FUNCTION (Global)
+// FORMAT BUTTON INSERT FUNCTION (GLOBAL)
 // =============================================
 window.insertFormat = function(format) {
+    if (!editor) return;
+    
     const startPos = editor.selectionStart;
     const endPos = editor.selectionEnd;
     const text = editor.value;
@@ -559,55 +543,56 @@ window.insertFormat = function(format) {
     const after = text.substring(endPos);
     
     let newText;
-    let newCursorPos;
+    let newCursorStart, newCursorEnd;
     
     if (format.includes('# ')) {
-        const lines = selected.split('\n').filter(l => l.trim());
-        const wrappedLines = lines.length > 0 ? lines.map(line => format + line).join('\n') : format;
-        newText = before + wrappedLines + (selected ? '' : '');
-        newCursorPos = startPos + format.length;
+        // Headers - add # before each line
+        const lines = selected.trim().split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+            newText = before + lines.map(line => format + line).join('\n') + after;
+        } else {
+            newText = before + format + after;
+        }
+        newCursorStart = startPos + format.length;
+        newCursorEnd = newCursorStart + selected.length;
     } else if (format.includes('[') && format.includes(']')) {
+        // Links
         const urlMatch = format.match(/\((.*?)\)/);
         const url = urlMatch ? urlMatch[1] : '';
-        if (selected) {
+        if (selected.trim()) {
             newText = before + '[' + selected + '](' + url + ')' + after;
         } else {
             newText = before + '[link](' + url + ')' + after;
-            newCursorPos = startPos + 1;
+            newCursorStart = startPos + 1;
+            newCursorEnd = newCursorStart;
         }
     } else if (format.includes('```\n')) {
+        // Code blocks
         newText = before + format + '\n' + after;
-        newCursorPos = startPos + format.length + 1;
+        newCursorStart = startPos + format.length + 1;
+        newCursorEnd = newCursorStart;
     } else {
-        if (selected) {
-            newText = before + format + selected + format + after;
-            newCursorPos = startPos + format.length;
-        } else {
-            newText = before + format + format + after;
-            newCursorPos = startPos + format.length;
-        }
+        // Simple wrapping (bold, italic, lists)
+        newText = before + format + selected + format + after;
+        newCursorStart = startPos + format.length;
+        newCursorEnd = newCursorStart + selected.length;
     }
     
     editor.value = newText;
-    editor.focus();
     
-    if (newCursorPos !== undefined) {
-        if (selected) {
-            editor.selectionStart = startPos + format.length;
-            editor.selectionEnd = startPos + format.length + selected.length;
-        } else {
-            editor.selectionStart = newCursorPos;
-            editor.selectionEnd = newCursorPos;
-        }
+    if (newCursorStart !== undefined) {
+        editor.selectionStart = newCursorStart;
+        editor.selectionEnd = newCursorEnd;
     }
     
+    editor.focus();
     updatePreview();
     updateStats();
     localStorage.setItem(STORAGE_KEY, editor.value);
 };
 
 // =============================================
-// STATISTICS CALCULATION (WITH MD CLEAN MODE)
+// STATISTICS CALCULATION
 // =============================================
 function updateStats() {
     const text = editor.value;
