@@ -271,7 +271,6 @@ html, body {
     opacity: 1;
 }
 
-/* Keep main-container at SAME height — no expansion */
 .focus-mode .main-container {
     height: calc(100vh - 300px);
 }
@@ -285,6 +284,111 @@ html, body {
 .focus-mode .preview-wrapper {
     border-color: transparent;
 }
+
+/* =============================================
+   STATS BAR (ΚΕΝΤΡΑΡΙΣΜΕΝΟ & ΚΑΘΑΡΟ FRAME)
+   ============================================= */
+.stats-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0.7rem 1.2rem;
+    background: linear-gradient(to right, var(--bg-secondary), var(--bg-tertiary));
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.82rem;
+    min-height: 64px;
+    margin: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.stats-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: nowrap;
+    width: 100%;
+    white-space: nowrap;
+}
+
+.main-stats {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.meta-stats {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    opacity: 0.85;
+}
+
+.stats-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid transparent;
+}
+
+.stats-row span:hover {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stats-row span {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .stats-row span:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.stats-row strong {
+    color: var(--accent-color);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    min-width: 45px;
+    text-align: center;
+    font-feature-settings: "tnum";
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 400;
+    opacity: 0.7;
+}
+
+#cursor-line, #cursor-col {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    min-width: 1ch;
+    text-align: right;
+    color: var(--text-secondary);
+}
+
+.meta-stats > span strong {
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+/* =============================================
+   TOAST NOTIFICATIONS
+   ============================================= */
+#toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+.toast {
+    background: var(--bg-primary); color: var(--text-primary); padding: 12px 20px; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid var(--border-color); font-size: 0.9rem;
+    opacity: 0; transform: translateY(20px); transition: all 0.3s ease; max-width: 300px; word-break: break-word;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-success { border-left: 4px solid #10B981; }
+.toast-error { border-left: 4px solid #EF4444; }
+.toast-warning { border-left: 4px solid #F59E0B; }
 
 /* =============================================
    CUSTOM CONTEXT MENU
@@ -327,7 +431,7 @@ html, body {
     padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color);
     letter-spacing: 0.5px; opacity: 0.8; transition: all 0.3s ease; font-family: var(--font-mono);
 }
-.theme-dark .version-badge { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+[data-theme="dark"] .version-badge { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
 .version-badge:hover { opacity: 1; border-color: var(--accent-color); }
 
 /* =============================================
@@ -389,9 +493,10 @@ html, body {
     .left-section, .right-section { width: 100%; justify-content: center; }
     .top-bar h1 { order: -1; }
     .split-mode .main-container { flex-direction: column; }
-    .format-bar { justify-content: center; }
+    .format-bar { justify-content: center; margin-left: 0; }
     .footer-legal { flex-direction: column; gap: var(--spacing-xs); }
-    .stats-row { font-size: 0.75rem; }
+    .stats-row { flex-wrap: wrap; font-size: 0.75rem; gap: 8px; }
+    .main-container { height: calc(100vh - 340px); }
 }
 
 /* =============================================
