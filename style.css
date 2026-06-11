@@ -1,18 +1,18 @@
 /* =============================================
-   ROOT VARIABLES (Theming System)
+   ROOT VARIABLES (Midnight Blue Theme)
    ============================================= */
 :root {
-    /* Light Theme */
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8f9fa;
-    --bg-tertiary: #e9ecef;
-    --text-primary: #212529;
-    --text-secondary: #6c757d;
-    --border-color: #dee2e6;
-    --accent-color: #2196F3;
-    --hover-bg: rgba(33, 150, 243, 0.1);
-    --code-bg: #f5f5f5;
-    --shadow-light: rgba(0, 0, 0, 0.08);
+    /* Light Theme - Softer Midnight Blue Tones */
+    --bg-primary: #F8FAFC;
+    --bg-secondary: #E9F0F7;
+    --bg-tertiary: #D4E0EE;
+    --text-primary: #1A2B4C;
+    --text-secondary: #4A5A7C;
+    --border-color: #C5D0E0;
+    --accent-color: #3B82F6;
+    --hover-bg: rgba(59, 130, 246, 0.1);
+    --code-bg: #E5ECF4;
+    --shadow-light: rgba(26, 43, 76, 0.08);
     
     /* Spacing */
     --spacing-xs: 4px;
@@ -27,16 +27,17 @@
 }
 
 [data-theme="dark"] {
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-tertiary: #0f3460;
-    --text-primary: #eaeaea;
-    --text-secondary: #b0b0b0;
-    --border-color: #2d2d44;
-    --accent-color: #4FC3F7;
-    --hover-bg: rgba(79, 195, 247, 0.15);
-    --code-bg: #252538;
-    --shadow-light: rgba(0, 0, 0, 0.25);
+    /* Dark Theme - Deep Midnight Blue */
+    --bg-primary: #0A1628;
+    --bg-secondary: #0F1C30;
+    --bg-tertiary: #142338;
+    --text-primary: #E6EEF8;
+    --text-secondary: #A0AEC0;
+    --border-color: #1E2D44;
+    --accent-color: #60A5FA;
+    --hover-bg: rgba(96, 165, 250, 0.15);
+    --code-bg: #15243A;
+    --shadow-light: rgba(0, 0, 0, 0.3);
 }
 
 /* =============================================
@@ -161,6 +162,7 @@ html, body {
    ============================================= */
 .toolbar {
     display: flex;
+    justify-content: center; /* Center everything */
     align-items: center;
     gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-md);
@@ -199,10 +201,15 @@ html, body {
     border-left: 1px solid var(--border-color);
 }
 
+/* TOOLBAR CENTERED FORMAT BAR */
+
 .format-bar {
     display: flex;
     gap: var(--spacing-xs);
     flex-wrap: wrap;
+    justify-content: center; /* Format bar centered */
+    flex-grow: 1;
+    max-width: 600px;
 }
 
 .fmt-btn {
@@ -345,13 +352,15 @@ html, body {
     display: block;
 }
 
-/* Split Mode */
+/* SPLIT MODE FIX */
 .split-mode .panel:first-child {
-    display: block;
+    display: block !important;
+    width: 50%;
 }
 
 .split-mode .panel:last-child {
-    display: block;
+    display: block !important;
+    width: 50%;
 }
 
 .split-mode .main-container {
@@ -595,13 +604,19 @@ html, body {
     margin-top: 4px;
 }
 
-.footer a {
+.footer-legal span, .footer-legal a {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.footer-legal a {
     color: var(--accent-color);
     text-decoration: none;
     transition: opacity 0.2s;
 }
 
-.footer a:hover {
+.footer-legal a:hover {
     opacity: 0.8;
     text-decoration: underline;
 }

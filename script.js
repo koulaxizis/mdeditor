@@ -377,6 +377,21 @@ function setupEventListeners() {
             localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
         });
     }
+	
+	// ADD THIS NEW BUTTON HANDLER FOR NUMBERED LISTS
+const numListBtn = document.querySelector("button[onclick=\"insertFormat('1. ')\"]");
+if (!numListBtn) {
+    // Create it if doesn't exist
+    const fmtBar = document.getElementById('format-bar');
+    const btn = document.createElement('button');
+    btn.className = 'fmt-btn';
+    btn.textContent = '1.';
+    btn.title = 'Numbered List / Αριθμημένη Λίστα';
+    btn.onclick = () => insertFormat('1. ');
+    fmtBar.insertBefore(btn, fmtBar.children[6]); // Insert after Quote button
+} else {
+    numListBtn.title = 'Numbered List / Αριθμημένη Λίστα';
+}
 
     // Word Wrap Toggle
     if (wordWrapBtn) {
