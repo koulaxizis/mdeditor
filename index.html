@@ -51,13 +51,18 @@
 
         <!-- Format Bar (appears on focus) -->
         <div class="format-bar hidden" id="format-bar">
-             <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
-             <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
-             <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
-             <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
-             <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
-             <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
-             <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
+     <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
+     <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
+     <button class="fmt-btn" title="Underline" onclick="insertFormat('<u>')">U</button>
+     <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
+     <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
+     <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
+     <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
+     <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
+     <button class="fmt-btn" title="Quote" onclick="insertFormat('> ')">"</button>
+     <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
+     <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
+</div>
         </div>
         
         <div class="export-group">

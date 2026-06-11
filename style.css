@@ -592,6 +592,48 @@ body.focus-mode.live-mode #preview-panel {
     display: none !important;
 }
 
+/* CLOSE TIP BUTTON */
+.close-tip-btn:hover {
+    background-color: rgba(255,255,255,0.3) !important;
+}
+
+/* ENHANCED FORMAT BAR */
+.format-bar {
+    gap: 6px;
+    padding: 6px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+}
+
+.fmt-btn {
+    width: 30px;
+    height: 30px;
+    transition: all 0.2s;
+}
+
+.fmt-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* CHEATSHEET SECTIONS */
+.cheatsheet-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.cheatsheet-section:last-child {
+    border-bottom: none;
+}
+
+.cheatsheet-section h3 {
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 /* =============================================
    RESPONSIVE
    ============================================= */

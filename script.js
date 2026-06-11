@@ -80,7 +80,7 @@ const translations = {
     }
 };
 
-// Tips - Now sticky with close button
+// Tips - Sticky with close button
 const tips = {
     el: [
         '💡 Χρησιμοποίησε `#` για τίτλους (# H1, ## H2, ### H3)',
@@ -115,7 +115,7 @@ const tips = {
 // =============================================
 // DOM ELEMENTS
 // =============================================
-let editor = document.getElementById('editor');
+const editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
 const pageTitle = document.getElementById('page-title');
@@ -123,7 +123,6 @@ const formatBar = document.getElementById('format-bar');
 const editorPanel = document.getElementById('edit-panel');
 const tipBanner = document.getElementById('tip-banner');
 const tipText = document.getElementById('tip-text');
-const closeTipBtn = document.createElement('span'); // Create close button dynamically
 
 // Buttons & Controls
 const langToggle = document.getElementById('lang-toggle');
@@ -147,11 +146,8 @@ const charCountEl = document.getElementById('char-count');
 const wordCountEl = document.getElementById('word-count');
 const paraCountEl = document.getElementById('para-count');
 
-// Track if format bar click is pending
-let formatButtonClickPending = false;
-
 // =============================================
-// INITIALIZATION
+// INITIALIZATION (ONCE)
 // =============================================
 function init() {
     if (!editor || !pageTitle) {
@@ -165,34 +161,27 @@ function init() {
         editor.value = savedContent;
     }
     
-    // Apply saved settings
+    // Apply saved settings immediately
     applyTheme(currentTheme);
     applyLanguage(currentLanguage);
     
-    // Stats toggle state
-    if (currentStatsMode === 'md-clean') {
-        if (mdStatsToggle) mdStatsToggle.checked = true;
-    } else {
-        if (mdStatsToggle) mdStatsToggle.checked = false;
-    }
+    if (currentStatsMode === 'md-clean' && mdStatsToggle) mdStatsToggle.checked = true;
+    else if (mdStatsToggle) mdStatsToggle.checked = false;
     
-    // Auto-close toggle state
-    if (autoCloseEnabled) {
-        if (autoCloseToggle) autoCloseToggle.checked = true;
-    }
+    if (autoCloseEnabled && autoCloseToggle) autoCloseToggle.checked = true;
     
-    // Set random tip (STICKY)
+    // Show sticky tip ONCE
     showStickyTip();
+    
+    // Set default view mode FIRST
+    setViewMode('split');
     
     // Initial render and stats
     updatePreview();
     updateStats();
     
-    // Setup event listeners (ONLY ONCE!)
+    // Setup ALL event listeners
     setupEventListeners();
-    
-    // FIX: Initialize to SPLIT MODE correctly
-    setViewMode('split');
 }
 
 // =============================================
@@ -201,21 +190,29 @@ function init() {
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
     
+    // Don't show if already closed before
+    if (localStorage.getItem('tip-closed') === 'true') {
+        tipBanner.classList.add('hidden');
+        return;
+    }
+    
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
     tipText.textContent = tipsForLang[randomIndex];
     
-    // Add close button
-    if (tipBanner.children.length < 3) { // Avoid duplicate if called multiple times
+    // Add close button only once
+    if (!document.querySelector('.close-tip-btn')) {
+        const closeTipBtn = document.createElement('span');
         closeTipBtn.textContent = '✕';
         closeTipBtn.className = 'close-tip-btn';
         closeTipBtn.title = translations[currentLanguage].closeTip || 'Close';
-        closeTipBtn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; font-size:1rem; opacity:0.8; transition:opacity 0.2s;';
-        closeTipBtn.onmouseover = () => closeTipBtn.style.opacity = '1';
-        closeTipBtn.onmouseout = () => closeTipBtn.style.opacity = '0.8';
+        closeTipBtn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; font-size:1rem; opacity:0.8; transition:opacity 0.2s; padding:2px 6px; border-radius:4px;';
+        closeTipBtn.onmouseover = () => { closeTipBtn.style.opacity = '1'; closeTipBtn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
+        closeTipBtn.onmouseout = () => { closeTipBtn.style.opacity = '0.8'; closeTipBtn.style.backgroundColor = 'transparent'; };
         
         closeTipBtn.onclick = () => {
             tipBanner.classList.add('hidden');
+            localStorage.setItem('tip-closed', 'true'); // Remember it was closed
         };
         
         tipBanner.appendChild(closeTipBtn);
@@ -227,7 +224,7 @@ function showStickyTip() {
 // =============================================
 // GLOBAL FORMAT FUNCTION
 // =============================================
-function doInsertFormat(format) {
+window.insertFormat = function(format) {
     if (!editor) return;
     
     const startPos = editor.selectionStart;
@@ -241,7 +238,6 @@ function doInsertFormat(format) {
     let newCursorStart, newCursorEnd;
     
     if (format.includes('# ') && !format.includes('[')) {
-        // Headers
         const lines = selected.trim().split('\n').filter(l => l.trim());
         if (lines.length > 0) {
             newText = before + lines.map(line => format + line).join('\n') + after;
@@ -251,7 +247,6 @@ function doInsertFormat(format) {
         newCursorStart = startPos + format.length;
         newCursorEnd = newCursorStart + selected.length;
     } else if (format.includes('[') && format.includes(']')) {
-        // Links
         const urlMatch = format.match(/\((.*?)\)/);
         const url = urlMatch ? urlMatch[1] : '';
         if (selected.trim()) {
@@ -262,19 +257,24 @@ function doInsertFormat(format) {
             newCursorEnd = newCursorStart;
         }
     } else if (format.includes('```\n')) {
-        // Code blocks
         newText = before + format + '\n' + after;
         newCursorStart = startPos + format.length + 1;
         newCursorEnd = newCursorStart;
     } else if (format === '> ') {
-        // Blockquotes
         const lines = selected.split('\n');
         const wrappedLines = lines.map(line => '> ' + line).join('\n');
         newText = before + wrappedLines + after;
         newCursorStart = startPos + 2;
         newCursorEnd = newCursorStart + selected.length;
+    } else if (format === '\n---\n') {
+        newText = before + format + after;
+        newCursorStart = startPos + format.length;
+        newCursorEnd = newCursorStart;
+    } else if (format === '<u>') {
+        newText = before + format + selected + '</u>' + after;
+        newCursorStart = startPos + 3;
+        newCursorEnd = newCursorStart + selected.length;
     } else {
-        // Simple wrapping (bold, italic, lists)
         newText = before + format + selected + format + after;
         newCursorStart = startPos + format.length;
         newCursorEnd = newCursorStart + selected.length;
@@ -291,22 +291,20 @@ function doInsertFormat(format) {
     updatePreview();
     updateStats();
     localStorage.setItem(STORAGE_KEY, editor.value);
-}
-
-window.insertFormat = doInsertFormat;
+};
 
 // =============================================
-// EVENT LISTENERS SETUP
+// EVENT LISTENERS SETUP (ONCE ONLY)
 // =============================================
 function setupEventListeners() {
-    // =================== EDITOR INPUT ===================
+    // Editor input
     editor.addEventListener('input', () => {
         localStorage.setItem(STORAGE_KEY, editor.value);
         updatePreview();
         updateStats();
     });
     
-    // =================== FORMAT BAR SHOW/HIDE (IMPROVED) ===================
+    // Format bar show/hide
     editor.addEventListener('focus', () => {
         if (formatBar) formatBar.classList.remove('hidden');
     });
@@ -316,61 +314,53 @@ function setupEventListeners() {
             const activeEl = document.activeElement;
             const isFormatButton = activeEl && (activeEl.classList.contains('fmt-btn') || activeEl.closest('.format-bar'));
             
-            if (!isFormatButton) {
-                if (formatBar) formatBar.classList.add('hidden');
-            }
+            if (!isFormatButton && formatBar) formatBar.classList.add('hidden');
         }, 150);
     });
     
+    // Prevent blur when clicking format buttons
     if (formatBar) {
-        formatBar.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            formatButtonClickPending = true;
-        });
+        formatBar.addEventListener('mousedown', (e) => e.preventDefault());
     }
     
-    // =================== THEME TOGGLE ===================
-    themeToggle.addEventListener('click', () => {
+    // Theme toggle
+    if (themeToggle) themeToggle.addEventListener('click', () => {
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         applyTheme(newTheme);
     });
     
-    // =================== LANGUAGE TOGGLE ===================
-    langToggle.addEventListener('click', () => {
+    // Language toggle
+    if (langToggle) langToggle.addEventListener('click', () => {
         const newLang = currentLanguage === 'el' ? 'en' : 'el';
         applyLanguage(newLang);
     });
     
-    // =================== VIEW MODES ===================
+    // View modes
     if (modeEdit) modeEdit.addEventListener('click', () => setViewMode('edit'));
     if (modeLive) modeLive.addEventListener('click', () => setViewMode('live'));
     if (modePreview) modePreview.addEventListener('click', () => setViewMode('preview'));
     if (modeSplit) modeSplit.addEventListener('click', () => setViewMode('split'));
     if (modeFocus) modeFocus.addEventListener('click', () => toggleFocusMode());
     
-    // =================== STATS TOGGLE ===================
-    if (mdStatsToggle) {
-        mdStatsToggle.addEventListener('change', (e) => {
-            currentStatsMode = e.target.checked ? 'md-clean' : 'raw';
-            localStorage.setItem(STATS_KEY, currentStatsMode);
-            updateStats();
-        });
-    }
+    // Stats toggle
+    if (mdStatsToggle) mdStatsToggle.addEventListener('change', (e) => {
+        currentStatsMode = e.target.checked ? 'md-clean' : 'raw';
+        localStorage.setItem(STATS_KEY, currentStatsMode);
+        updateStats();
+    });
     
-    // =================== AUTO-CLOSE TOGGLE ===================
-    if (autoCloseToggle) {
-        autoCloseToggle.addEventListener('change', (e) => {
-            autoCloseEnabled = e.target.checked;
-            localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
-        });
-    }
+    // Auto-close toggle
+    if (autoCloseToggle) autoCloseToggle.addEventListener('change', (e) => {
+        autoCloseEnabled = e.target.checked;
+        localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
+    });
     
-    // =================== EXPORT BUTTONS ===================
+    // Export buttons
     if (exportMd) exportMd.addEventListener('click', () => downloadFile(editor.value, 'document.md', 'text/markdown'));
     if (exportTxt) exportTxt.addEventListener('click', () => downloadFile(editor.value, 'document.txt', 'text/plain'));
     if (exportPdf) exportPdf.addEventListener('click', () => window.print());
     
-    // =================== CHEATSHEET MODAL ===================
+    // Cheatsheet modal
     if (cheatsheetBtn) cheatsheetBtn.addEventListener('click', () => {
         populateCheatsheet();
         if (cheatsheetModal) cheatsheetModal.classList.remove('hidden');
@@ -381,12 +371,10 @@ function setupEventListeners() {
     });
     
     if (cheatsheetModal) cheatsheetModal.addEventListener('click', (e) => {
-        if (e.target === cheatsheetModal) {
-            cheatsheetModal.classList.add('hidden');
-        }
+        if (e.target === cheatsheetModal) cheatsheetModal.classList.add('hidden');
     });
     
-    // =================== TRUE LIVE MODE LOGIC ===================
+    // Live mode click-to-edit
     if (preview && preview.parentElement) {
         preview.parentElement.addEventListener('click', (e) => {
             if (pageBody.classList.contains('live-mode') && 
@@ -406,17 +394,13 @@ function setupEventListeners() {
         });
     }
     
-    // =================== KEYBOARD HANDLERS ===================
-    // Document-level listener for global shortcuts that don't conflict with browser
+    // KEYBOARD SHORTCUTS & AUTO-CLOSE
     document.addEventListener('keydown', (e) => {
-        // Only intercept if we are NOT typing in a modal or other input
         const isTypingInEditor = document.activeElement === editor;
         
-        // ESCAPE KEY
+        // ESCAPE
         if (e.key === 'Escape') {
-            if (pageBody.classList.contains('focus-mode')) {
-                toggleFocusMode();
-            }
+            if (pageBody.classList.contains('focus-mode')) toggleFocusMode();
             if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
                 pageBody.classList.remove('live-editing');
                 e.preventDefault();
@@ -426,118 +410,58 @@ function setupEventListeners() {
             }
         }
         
-        // KEYBOARD SHORTCUTS (Ctrl/Cmd+B, I, K, H, L)
-        // We only intercept if we are inside the editor to avoid blocking browser shortcuts
+        // Shortcuts (only in editor)
         if (isTypingInEditor && (e.ctrlKey || e.metaKey)) {
             const key = e.key.toLowerCase();
-            if (key === 'b') {
-                e.preventDefault();
-                doInsertFormat('**');
-            } else if (key === 'i') {
-                e.preventDefault();
-                doInsertFormat('*');
-            } else if (key === 'k') {
-                e.preventDefault();
-                doInsertFormat('[link](https://example.com)');
-            } else if (key === 'h') {
-                e.preventDefault();
-                doInsertFormat('# ');
-            } else if (key === 'l') {
-                e.preventDefault();
-                doInsertFormat('- ');
-            }
+            if (key === 'b') { e.preventDefault(); insertFormat('**'); }
+            else if (key === 'i') { e.preventDefault(); insertFormat('*'); }
+            else if (key === 'k') { e.preventDefault(); insertFormat('[link](https://example.com)'); }
+            else if (key === 'h') { e.preventDefault(); insertFormat('# '); }
+            else if (key === 'l') { e.preventDefault(); insertFormat('- '); }
         }
     });
     
     // AUTO-CLOSE BRACKETS (in editor only)
     if (editor) {
         editor.addEventListener('keydown', (e) => {
-            if (!autoCloseEnabled) return;
+            if (!autoCloseEnabled || e.shiftKey) return;
             
-            // Skip if Shift is pressed
-            if (e.shiftKey) return;
+            const pairs = {'(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`'};
             
-            const pairs = {
-                '(': ')',
-                '[': ']',
-                '{': '}',
-                '"': '"',
-                "'": "'",
-                '`': '`'
-            };
-            
-            // Special case: asterisk for bold/italic
+            // Special: asterisk → **
             if (e.key === '*') {
                 e.preventDefault();
-                const startPos = editor.selectionStart;
-                const endPos = editor.selectionEnd;
-                const text = editor.value;
-                const before = text.substring(0, startPos);
-                const selected = text.substring(startPos, endPos);
-                const after = text.substring(endPos);
-                
-                const newText = before + '**' + selected + '**' + after;
-                editor.value = newText;
-                
-                editor.selectionStart = startPos + 1;
-                editor.selectionEnd = startPos + 1 + selected.length;
-                editor.focus();
-                
-                updatePreview();
-                updateStats();
-                localStorage.setItem(STORAGE_KEY, editor.value);
+                const pos = editor.selectionStart;
+                const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+                editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'select');
+                updatePreview(); updateStats(); localStorage.setItem(STORAGE_KEY, editor.value);
                 return;
             }
             
-            // Special case: underscore for italic
+            // Special: underscore → __
             if (e.key === '_') {
                 e.preventDefault();
-                const startPos = editor.selectionStart;
-                const endPos = editor.selectionEnd;
-                const text = editor.value;
-                const before = text.substring(0, startPos);
-                const selected = text.substring(startPos, endPos);
-                const after = text.substring(endPos);
-                
-                const newText = before + '__' + selected + '__' + after;
-                editor.value = newText;
-                
-                editor.selectionStart = startPos + 1;
-                editor.selectionEnd = startPos + 1 + selected.length;
-                editor.focus();
-                
-                updatePreview();
-                updateStats();
-                localStorage.setItem(STORAGE_KEY, editor.value);
+                const pos = editor.selectionStart;
+                const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+                editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'select');
+                updatePreview(); updateStats(); localStorage.setItem(STORAGE_KEY, editor.value);
                 return;
             }
             
+            // Regular pairs
             if (pairs[e.key]) {
                 e.preventDefault();
-                const startPos = editor.selectionStart;
-                const endPos = editor.selectionEnd;
-                const text = editor.value;
-                const before = text.substring(0, startPos);
-                const selected = text.substring(startPos, endPos);
-                const after = text.substring(endPos);
-                
-                const closingChar = pairs[e.key];
-                editor.value = before + e.key + selected + closingChar + after;
-                
-                editor.selectionStart = startPos + 1;
-                editor.selectionEnd = startPos + 1 + selected.length;
-                editor.focus();
-                
-                updatePreview();
-                updateStats();
-                localStorage.setItem(STORAGE_KEY, editor.value);
+                const pos = editor.selectionStart;
+                const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+                editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'select');
+                updatePreview(); updateStats(); localStorage.setItem(STORAGE_KEY, editor.value);
             }
         });
     }
 }
 
 // =============================================
-// THEME HANDLER
+// THEME & LANGUAGE HANDLERS
 // =============================================
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -545,9 +469,6 @@ function applyTheme(theme) {
     localStorage.setItem(THEME_KEY, theme);
 }
 
-// =============================================
-// LANGUAGE HANDLER
-// =============================================
 function applyLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem(LANGUAGE_KEY, lang);
@@ -555,61 +476,38 @@ function applyLanguage(lang) {
     
     if (pageTitle) pageTitle.textContent = translations[lang].pageTitle;
     
-    const buttons = document.querySelectorAll('[data-lang-key]');
-    buttons.forEach(btn => {
+    document.querySelectorAll('[data-lang-key]').forEach(btn => {
         const key = btn.getAttribute('data-lang-key');
-        if (translations[lang][key]) {
-            btn.textContent = translations[lang][key];
-        }
+        if (translations[lang][key]) btn.textContent = translations[lang][key];
     });
     
-    // Update close tip button text if exists
-    if (closeTipBtn) {
-        closeTipBtn.title = translations[lang].closeTip || 'Close';
-    }
-    
-    const statLabels = document.querySelectorAll('.stat-label');
-    statLabels.forEach((label, index) => {
+    document.querySelectorAll('.stat-label').forEach((label, index) => {
         const key = label.dataset.langKey;
         if (index === 0 && key === 'chars') label.textContent = translations[lang].chars;
         if (index === 1 && key === 'words') label.textContent = translations[lang].words;
         if (index === 2 && key === 'paragraphs') label.textContent = translations[lang].paragraphs;
     });
     
-    if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
-        populateCheatsheet();
-    }
+    if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) populateCheatsheet();
+    
+    // Update close tip button title
+    const closeTipBtn = document.querySelector('.close-tip-btn');
+    if (closeTipBtn) closeTipBtn.title = translations[lang].closeTip || 'Close';
 }
 
 // =============================================
-// VIEW MODE HANDLER (FIXED INITIAL STATE)
+// VIEW MODE HANDLER
 // =============================================
 function setViewMode(mode) {
     pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing');
     
-    if (modeEdit) modeEdit.classList.remove('active');
-    if (modeLive) modeLive.classList.remove('active');
-    if (modePreview) modePreview.classList.remove('active');
-    if (modeSplit) modeSplit.classList.remove('active');
+    [modeEdit, modeLive, modePreview, modeSplit].forEach(m => m?.classList.remove('active'));
     
     switch (mode) {
-        case 'edit':
-            pageBody.classList.add('edit-only');
-            if (modeEdit) modeEdit.classList.add('active');
-            break;
-        case 'live':
-            pageBody.classList.add('live-mode');
-            if (modeLive) modeLive.classList.add('active');
-            break;
-        case 'preview':
-            pageBody.classList.add('preview-only');
-            if (modePreview) modePreview.classList.add('active');
-            break;
-        case 'split':
-        default:
-            pageBody.classList.add('split-mode');
-            if (modeSplit) modeSplit.classList.add('active');
-            break;
+        case 'edit': pageBody.classList.add('edit-only'); modeEdit?.classList.add('active'); break;
+        case 'live': pageBody.classList.add('live-mode'); modeLive?.classList.add('active'); break;
+        case 'preview': pageBody.classList.add('preview-only'); modePreview?.classList.add('active'); break;
+        case 'split': default: pageBody.classList.add('split-mode'); modeSplit?.classList.add('active'); break;
     }
 }
 
@@ -618,20 +516,15 @@ function setViewMode(mode) {
 // =============================================
 function toggleFocusMode() {
     pageBody.classList.toggle('focus-mode');
-    if (modeFocus) modeFocus.classList.toggle('active');
+    modeFocus?.classList.toggle('active');
 }
 
 // =============================================
 // MARKDOWN RENDERING
 // =============================================
 function updatePreview() {
-    const markdown = editor.value;
-    if (typeof marked !== 'undefined') {
-        preview.innerHTML = marked.parse(markdown);
-    } else {
-        console.error("Marked library not loaded.");
-        preview.innerHTML = '<p style="color:red">Error: Markdown parser not found.</p>';
-    }
+    if (typeof marked !== 'undefined') preview.innerHTML = marked.parse(editor.value);
+    else preview.innerHTML = '<p style="color:red">Error: marked library not loaded.</p>';
 }
 
 // =============================================
@@ -641,12 +534,9 @@ function downloadFile(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 // =============================================
@@ -655,24 +545,24 @@ function downloadFile(content, filename, mimeType) {
 const cheatsheetData = {
     el: {
         basic: [
-            { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα 1', desc: 'Χρησιμοποίησε ένα # για H1' },
-            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα 2', desc: 'Δύο #' για H2' },
-            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα 3', desc: 'Τρία #' για H3' },
+            { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα 1', desc: 'Ένα # για H1' },
+            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα 2', desc: 'Δύο ## για H2' },
+            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα 3', desc: 'Τρία ### για H3' },
             { title: 'Έντονο', example: '**έντονο κείμενο**', desc: 'Δύο αστερίσκοι' },
             { title: 'Πλάγιο', example: '*πλάγιο κείμενο*', desc: 'Ένας αστέρισκος' },
-            { title: 'Σύνδεσμος', example: '[Τίτλος](https://example.com)', desc: 'Γραμματική: [Ίσως](URL)' },
-            { title: 'Λίστα', example: '- Στοιχείο 1\n- Στοιχείο 2', desc: 'Αρχίζει με - ή *' },
-            { title: 'Αριθμημένη Λίστα', example: '1. Πρώτο\n2. Δεύτερο', desc: 'Αρχίζει με αριθμό.' }
+            { title: 'Σύνδεσμος', example: '[Τίτλος](https://example.com)', desc: '[Ίσως](URL)' },
+            { title: 'Λίστα', example: '- Στοιχείο 1\n- Στοιχείο 2', desc: 'Ξεκινά με -' },
+            { title: 'Αριθμημένη Λίστα', example: '1. Πρώτο\n2. Δεύτερο', desc: 'Ξεκινά με αριθμό.' }
         ],
         advanced: [
-            { title: 'Μπλοκ Κώδικα', example: '```\ncode here\n```', desc: 'Τρία backticks πριν και μετά' },
-            { title: 'Inline Κώδικας', example: '`code`', desc: 'Ένα backtick για inline' },
-            { title: 'Παράθεση', example: '> Παράθεση', desc: 'Προσθήκη > στην αρχή γραμμής' },
-            { title: 'Εικόνα', example: '![Alt Text](image.jpg)', desc: 'Όμοιο με σύνδεσμο, αλλά με !' },
-            { title: 'Πίνακας', example: '| Col1 | Col2 |\n|------|------|\n| A    | B    |', desc: 'Χρησιμοποίησε | για στήλες' },
-            { title: 'Διαχωριστική Γραμμή', example: '---', desc: 'Τρεις παύλες για γραμμή' },
-            { title: 'Υπογράμμιση', example: '<u>Υπογραμμισμένο</u>', desc: 'HTML tag για υπογράμμιση' },
-            { title: 'Κενό Γραμμής', example: '\\n\\n', desc: 'Δύο κενές γραμμές για νέα παράγραφο' }
+            { title: 'Μπλοκ Κώδικα', example: '```\ncode here\n```', desc: 'Τρία backticks' },
+            { title: 'Inline Κώδικας', example: '`code`', desc: 'Ένα backtick' },
+            { title: 'Παράθεση', example: '> Παράθεση', desc: 'Προσθήκη >' },
+            { title: 'Εικόνα', example: '![Alt Text](image.jpg)', desc: 'Όμοιο με σύνδεσμο με !' },
+            { title: 'Πίνακας', example: '| Col1 | Col2 |\n|------|------|\n| A | B |', desc: 'Χρήση | για στήλες' },
+            { title: 'Διαχωριστική Γραμμή', example: '---', desc: 'Τρεις παύλες' },
+            { title: 'Υπογράμμιση', example: '<u>Υπογραμμισμένο</u>', desc: 'HTML tag' },
+            { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }
         ]
     },
     en: {
@@ -682,19 +572,19 @@ const cheatsheetData = {
             { title: 'Heading 3', example: '### Heading 3', desc: 'Three ### for H3' },
             { title: 'Bold', example: '**bold text**', desc: 'Double asterisks' },
             { title: 'Italic', example: '*italic text*', desc: 'Single asterisk' },
-            { title: 'Link', example: '[Title](https://example.com)', desc: 'Syntax: [Text](URL)' },
-            { title: 'List', example: '- Item 1\n- Item 2', desc: 'Starts with - or *' },
+            { title: 'Link', example: '[Title](https://example.com)', desc: '[Text](URL)' },
+            { title: 'List', example: '- Item 1\n- Item 2', desc: 'Starts with -' },
             { title: 'Ordered List', example: '1. First\n2. Second', desc: 'Starts with number.' }
         ],
         advanced: [
-            { title: 'Code Block', example: '```\ncode here\n```', desc: 'Triple backticks before and after' },
-            { title: 'Inline Code', example: '`code`', desc: 'Single backtick for inline' },
-            { title: 'Blockquote', example: '> Quote', desc: 'Add > at start of line' },
-            { title: 'Image', example: '![Alt Text](image.jpg)', desc: 'Like link but with !' },
-            { title: 'Table', example: '| Col1 | Col2 |\n|------|------|\n| A    | B    |', desc: 'Use | for columns' },
-            { title: 'Horizontal Rule', example: '---', desc: 'Three dashes for line' },
-            { title: 'Underline', example: '<u>Underlined</u>', desc: 'HTML tag for underline' },
-            { title: 'New Paragraph', example: '\\n\\n', desc: 'Two empty lines for new paragraph' }
+            { title: 'Code Block', example: '```\ncode here\n```', desc: 'Triple backticks' },
+            { title: 'Inline Code', example: '`code`', desc: 'Single backtick' },
+            { title: 'Blockquote', example: '> Quote', desc: 'Add > at start' },
+            { title: 'Image', example: '![Alt Text](image.jpg)', desc: 'Like link with !' },
+            { title: 'Table', example: '| Col1 | Col2 |\n|------|------|\n| A | B |', desc: 'Use | for columns' },
+            { title: 'Horizontal Rule', example: '---', desc: 'Three dashes' },
+            { title: 'Underline', example: '<u>Underlined</u>', desc: 'HTML tag' },
+            { title: 'New Paragraph', example: '\\n\\n', desc: 'Two empty lines' }
         ]
     }
 };
@@ -708,25 +598,11 @@ function populateCheatsheet() {
     
     let html = `<div class="cheatsheet-section"><h3>${t.basic}</h3>`;
     data.basic.forEach(item => {
-        html += `
-            <div class="cheatsheet-item">
-                <h4>${item.title}</h4>
-                <p><small>${item.desc}</small></p>
-                <code>${item.example.replace(/\n/g, '<br>')}</code>
-            </div>
-        `;
+        html += `<div class="cheatsheet-item"><h4>${item.title}</h4><p><small>${item.desc}</small></p><code>${item.example.replace(/\n/g, '<br>')}</code></div>`;
     });
-    html += `</div>`;
-    
-    html += `<div class="cheatsheet-section"><h3>${t.advanced}</h3>`;
+    html += `</div><div class="cheatsheet-section"><h3>${t.advanced}</h3>`;
     data.advanced.forEach(item => {
-        html += `
-            <div class="cheatsheet-item">
-                <h4>${item.title}</h4>
-                <p><small>${item.desc}</small></p>
-                <code>${item.example.replace(/\n/g, '<br>')}</code>
-            </div>
-        `;
+        html += `<div class="cheatsheet-item"><h4>${item.title}</h4><p><small>${item.desc}</small></p><code>${item.example.replace(/\n/g, '<br>')}</code></div>`;
     });
     html += `</div>`;
     
@@ -738,20 +614,12 @@ function populateCheatsheet() {
 // =============================================
 function updateStats() {
     const text = editor.value;
-    
     let charCount, wordCount, paragraphCount;
     
     if (currentStatsMode === 'md-clean') {
-        const cleanText = text
-            .replace(/^(#{1,6}\s)/gm, '')
-            .replace(/^\s*[-*+]\s+/gm, '')
-            .replace(/^\s*\d+\.\s+/gm, '')
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/\*(.*?)\*/g, '$1')
-            .replace(/!\[.*?\]\(.*?\)/g, '')
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/`(.*?)`/g, '$1')
-            .replace(/^>\s+/gm, '');
+        const cleanText = text.replace(/^(#{1,6}\s)/gm, '').replace(/^\s*[-*+]\s+/gm, '').replace(/^\s*\d+\.\s+/gm, '')
+            .replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1').replace(/`(.*?)`/g, '$1').replace(/^>\s+/gm, '');
         
         charCount = cleanText.length;
         const words = cleanText.trim().split(/\s+/).filter(w => w.length > 0);
