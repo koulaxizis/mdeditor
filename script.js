@@ -15,7 +15,7 @@ let autoCloseEnabled = localStorage.getItem(AUTO_CLOSE_KEY) === 'true';
 // Translations Object
 const translations = {
     el: {
-        pageTitle: 'Επεξεργαστής Markdown',
+        pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown',
         editMode: 'Επεξεργασία',
         previewMode: 'Προεπισκόπηση',
         splitMode: 'Διπλό Panel',
@@ -47,7 +47,7 @@ const translations = {
         closeTip: 'Κλείσιμο'
     },
     en: {
-        pageTitle: 'Markdown Editor',
+        pageTitle: 'Minimalist Markdown Editor',
         editMode: 'Edit',
         previewMode: 'Preview',
         splitMode: 'Split View',
@@ -121,6 +121,7 @@ const pageTitle = document.getElementById('page-title');
 const formatBar = document.getElementById('format-bar');
 const tipBanner = document.getElementById('tip-banner');
 const tipText = document.getElementById('tip-text');
+const focusToast = document.getElementById('focus-toast');
 
 const langToggle = document.getElementById('lang-toggle');
 const themeToggle = document.getElementById('theme-toggle');
@@ -244,7 +245,6 @@ window.insertFormat = function(format) {
         newCursorStart = startPos + 3;
         newCursorEnd = newCursorStart + selected.length;
     } else {
-        // Default wrap (**, *, -, etc.)
         newText = before + format + selected + format + after;
         newCursorStart = startPos + format.length;
         newCursorEnd = newCursorStart + selected.length;
@@ -271,19 +271,9 @@ function setupEventListeners() {
         updateStats();
     });
 
-    // --- Format Bar Visibility ---
-    editor.addEventListener('focus', () => formatBar?.classList.remove('hidden'));
+    // --- Format Bar is NOW PERMANENT (removed hide/show logic) ---
+    // Just keep it visible via CSS
     
-    editor.addEventListener('blur', () => {
-        setTimeout(() => {
-            const activeEl = document.activeElement;
-            const isFormatButton = activeEl && (activeEl.classList.contains('fmt-btn') || activeEl.closest('.format-bar'));
-            if (!isFormatButton) formatBar?.classList.add('hidden');
-        }, 150);
-    });
-    
-    if (formatBar) formatBar.addEventListener('mousedown', e => e.preventDefault()); // Prevent blur on click
-
     // --- Toggles & Modes ---
     if (themeToggle) themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
     if (langToggle) langToggle.addEventListener('click', () => applyLanguage(currentLanguage === 'el' ? 'en' : 'el'));
@@ -292,7 +282,14 @@ function setupEventListeners() {
     if (modeLive) modeLive.addEventListener('click', () => setViewMode('live'));
     if (modePreview) modePreview.addEventListener('click', () => setViewMode('preview'));
     if (modeSplit) modeSplit.addEventListener('click', () => setViewMode('split'));
-    if (modeFocus) modeFocus.addEventListener('click', () => toggleFocusMode());
+    
+    if (modeFocus) modeFocus.addEventListener('click', () => {
+        toggleFocusMode();
+        // Show toast notification for 2 seconds
+        if (pageBody.classList.contains('focus-mode')) {
+            showFocusToast();
+        }
+    });
     
     if (mdStatsToggle) mdStatsToggle.addEventListener('change', e => {
         currentStatsMode = e.target.checked ? 'md-clean' : 'raw';
@@ -334,69 +331,108 @@ function setupEventListeners() {
         });
     }
 
-    // --- KEYBOARD SHORTCUTS (Ctrl/Cmd+B, I, K, H, L) ---
-    // Listener στο DOCUMENT για να συλλάβει τα συντόμευσης μόνο αν είναι στον editor
+    // --- KEYBOARD SHORTCUTS (FIXED WITH PREVENTDEFAULT) ---
     document.addEventListener('keydown', e => {
         const isEditorActive = document.activeElement === editor;
         
         if (e.key === 'Escape') {
-            if (pageBody.classList.contains('focus-mode')) toggleFocusMode();
+            if (pageBody.classList.contains('focus-mode')) {
+                toggleFocusMode();
+                // Clear toast if exists
+                clearTimeout(window.focusToastTimer);
+                if (focusToast) focusToast.classList.add('hidden');
+            }
             if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
                 pageBody.classList.remove('live-editing');
                 e.preventDefault();
             }
-            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) cheatsheetModal.classList.add('hidden');
+            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
+                cheatsheetModal.classList.add('hidden');
+                e.preventDefault();
+            }
         }
 
+        // Shortcuts ONLY when typing in editor
         if (isEditorActive && (e.ctrlKey || e.metaKey)) {
             const key = e.key.toLowerCase();
-            if (key === 'b') { e.preventDefault(); insertFormat('**'); }
-            else if (key === 'i') { e.preventDefault(); insertFormat('*'); }
-            else if (key === 'k') { e.preventDefault(); insertFormat('[link](https://example.com)'); }
-            else if (key === 'h') { e.preventDefault(); insertFormat('# '); }
-            else if (key === 'l') { e.preventDefault(); insertFormat('- '); }
+            if (key === 'b') {
+                e.preventDefault();
+                insertFormat('**');
+            } else if (key === 'i') {
+                e.preventDefault();
+                insertFormat('*');
+            } else if (key === 'k') {
+                e.preventDefault();
+                insertFormat('[link](https://example.com)');
+            } else if (key === 'h') {
+                e.preventDefault();
+                insertFormat('# ');
+            } else if (key === 'l') {
+                e.preventDefault();
+                insertFormat('- ');
+            }
         }
     });
 
-    // --- AUTO-CLOSE BRACKETS (MANUAL TYPING ONLY) ---
-    // Αυτός ο listener είναι ΜΟΝΟ στον editor και ΕΠΑΓΩΓΗΤΕΡΑ ελέγχει αν το γεγονός προέρχεται από φυσική πληκτρολόγηση
+    // --- AUTO-CLOSE BRACKETS (FIXED - WORKING ON MANUAL TYPING) ---
     if (editor) {
         editor.addEventListener('keydown', e => {
-            if (!autoCloseEnabled || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+            // Only trigger on plain character input, not shortcuts
+            if (!autoCloseEnabled) return;
+            if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.key.length !== 1) return; // Only single characters
             
-            // Λίστα συμβόλων που θέλουμε "κλείσιμο"
             const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
             
-            // Ειδική περίπτωση για Asterisk (*) -> **
+            // Special case: asterisk -> **
             if (e.key === '*') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'select');
-                updatePreview(); updateStats(); localStorage.setItem(STORAGE_KEY, editor.value);
+                editor.dispatchEvent(new Event('input'));
                 return;
             }
             
-            // Ειδική περίπτωση για Underscore (_) -> __
+            // Special case: underscore -> __
             if (e.key === '_') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'select');
-                updatePreview(); updateStats(); localStorage.setItem(STORAGE_KEY, editor.value);
+                editor.dispatchEvent(new Event('input'));
                 return;
             }
             
-            // Γενικά ζεύγη () [] {} "" '' ``
+            // Regular pairs
             if (pairs[e.key]) {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'select');
-                updatePreview(); updateStats(); localStorage.setItem(STORAGE_KEY, editor.value);
+                editor.dispatchEvent(new Event('input'));
             }
         });
     }
+}
+
+// =============================================
+// FOCUS MODE TOAST NOTIFICATION
+// =============================================
+function showFocusToast() {
+    if (!focusToast) return;
+    
+    focusToast.classList.remove('hidden');
+    focusToast.classList.add('show');
+    
+    // Clear any existing timer
+    if (window.focusToastTimer) clearTimeout(window.focusToastTimer);
+    
+    // Hide after 2 seconds
+    window.focusToastTimer = setTimeout(() => {
+        focusToast.classList.remove('show');
+        setTimeout(() => focusToast.classList.add('hidden'), 300);
+    }, 2000);
 }
 
 // =============================================
@@ -527,14 +563,14 @@ function updateStats() {
     const text = editor.value;
     let c, w, p;
     if (currentStatsMode === 'md-clean') {
-        const clean = text.replace(/^(#{1,6}\s)|^\s*[-*+]\s|^\s*\d+\.\s|\*\*(.*?)\*\*|\*(.*?)\*|!\[.*?\]\(.*?\)|\[.*?\]\(.*?\)|`(.*?)`|^>\s+/gm, '$1$2$3$4$5$6$7')
-                          .replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1'); // Simplified cleanup
+        const clean = text.replace(/^(#{1,6}\s)|^\s*[-*+]\s|^\s*\d+\.\s|\*\*(.*?)\*\*|\*(.*?)\*|!\[.*?\]\(.*?\)|\[.*?\]\(.*?\)|`(.*?)`|^>\s+/gm, '')
+                          .replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
         c = clean.length;
-        w = clean.trim() === '' ? 0 : clean.trim().split(/\s+/).length;
+        w = clean.trim() === '' ? 0 : clean.trim().split(/\s+/).filter(x => x).length;
         p = clean.split(/\n\s*\n/).filter(x => x.trim()).length;
     } else {
         c = text.length;
-        w = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+        w = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(x => x).length;
         p = text.split(/\n\s*\n/).filter(x => x.trim()).length;
     }
     if (charCountEl) charCountEl.textContent = c.toLocaleString();

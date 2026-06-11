@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Editor - Χρήστος Κουλαξίζης</title>
+    <title>Μινιμαλιστικός επεξεργαστής Markdown - Χρήστος Κουλαξίζης</title>
     
     <!-- No Google Fonts - System fonts only -->
     
@@ -27,8 +27,13 @@
             <!-- Focus Mode Toggle -->
             <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
         </div>
-        <h1 id="page-title">Markdown Editor</h1>
+        <!-- CENTERED TITLE -->
+        <h1 id="page-title">Μινιμαλιστικός επεξεργαστής Markdown</h1>
         <div class="right-section">
+            <!-- Export buttons moved here (left of cheatsheet) -->
+            <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
+            <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
+            <button id="export-pdf" class="btn" data-lang-key="exportPDF">PDF</button>
             <button id="cheatsheet-btn" class="icon-btn" title="Markdown Cheat Sheet">?</button>
         </div>
     </header>
@@ -49,28 +54,23 @@
             </label>
         </div>
 
-        <!-- Format Bar (appears on focus) -->
-        <div class="format-bar hidden" id="format-bar">
-     <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
-     <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
-     <button class="fmt-btn" title="Underline" onclick="insertFormat('<u>')">U</button>
-     <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
-     <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
-     <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
-     <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
-     <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
-     <button class="fmt-btn" title="Quote" onclick="insertFormat('> ')">"</button>
-     <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
-     <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
-</div>
+        <!-- Format Bar - NOW PERMANENTLY VISIBLE -->
+        <div class="format-bar" id="format-bar">
+             <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
+             <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
+             <button class="fmt-btn" title="Underline" onclick="insertFormat('<u>')">U</button>
+             <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
+             <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
+             <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
+             <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
+             <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
+             <button class="fmt-btn" title="Quote" onclick="insertFormat('> ')">"</button>
+             <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
+             <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
         </div>
         
         <div class="export-group">
-            <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
-            <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
-            <button id="export-pdf" class="btn" data-lang-key="exportPDF">PDF</button>
-            
-            <!-- Auto-Close Toggle -->
+            <!-- Auto-Close Toggle ONLY here now -->
             <label title="Αυτόματο κλείσιμο παρενθέσεων και markdown symbols" style="font-size:0.7rem; margin-left:10px; padding:0 10px; border-left:1px solid var(--border-color); display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="auto-close-toggle"> 
                 <span data-lang-key="autoClose">Auto-Close</span>
@@ -140,6 +140,11 @@
                 <!-- Will be populated by JS -->
             </div>
         </div>
+    </div>
+
+    <!-- Focus Mode Notification Toast -->
+    <div id="focus-toast" class="focus-toast hidden">
+        <span>ESC για επαναφορά σε πλήρη προβολή</span>
     </div>
 
     <!-- Main Script -->
