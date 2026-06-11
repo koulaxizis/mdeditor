@@ -8,20 +8,20 @@ const STATS_KEY = 'lumo-editor-stats-mode';
 const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 
 // VERSION CONFIGURATION
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.0.6";
 const LAST_UPDATE_DATE = "11/06/2026";
 
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = false;
-let wordWrapEnabled = true; // Default: On
+let wordWrapEnabled = true;
 const WORDS_PER_MINUTE = 200;
 
-// Translations
+// Translations - COMPLETED FOR BOTH LANGUAGES
 const translations = {
     el: {
-        pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown',
+        pageTitle: 'Επεξεργαστής Markdown',
         editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel',
         liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
         exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Άνοιγμα', cheatSheetTitle: 'Cheat Sheet Markdown',
@@ -31,7 +31,9 @@ const translations = {
         fullGuide: 'Πλήρης Οδηγός Markdown', commonmark: 'CommonMark Spec', mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα.',
         bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα', strikethrough: 'Διαγράμμιση',
         toastSaved: 'Αυτόματη αποθήκευση ολοκληρώθηκε.',
-        toastExport: 'Εξαγωγή ως {type} ολοκληρώθηκε.',
+        toastExportMD: 'Εξαγωγή ως MD ολοκληρώθηκε.',
+        toastExportTXT: 'Εξαγωγή ως TXT ολοκληρώθηκε.',
+        toastExportHTML: 'Εξαγωγή ως HTML ολοκληρώθηκε.',
         toastError: 'Σφάλμα κατά τη διαδικασία.',
         toastLoaded: 'Το αρχείο φορτώθηκε επιτυχώς.',
         toastCopied: 'Το κείμενο αντιγράφηκε ως HTML.',
@@ -40,7 +42,7 @@ const translations = {
         ctxLink: 'Σύνδεσμος', ctxCopyHTML: 'Αντιγραφή ως HTML', ctxCut: 'Αποκοπή', ctxCopy: 'Αντιγραφή', ctxPaste: 'Επικόλληση'
     },
     en: {
-        pageTitle: 'Minimalist Markdown Editor',
+        pageTitle: 'Markdown Editor',
         editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View',
         liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
         exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Open', cheatSheetTitle: 'Markdown Cheat Sheet',
@@ -50,7 +52,9 @@ const translations = {
         fullGuide: 'Full Markdown Guide', commonmark: 'CommonMark Spec', mdDesc: 'Markdown is a lightweight markup language.',
         bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List', strikethrough: 'Strikethrough',
         toastSaved: 'Auto-save completed.',
-        toastExport: 'Export to {type} completed.',
+        toastExportMD: 'Export to MD completed.',
+        toastExportTXT: 'Export to TXT completed.',
+        toastExportHTML: 'Export to HTML completed.',
         toastError: 'An error occurred.',
         toastLoaded: 'File loaded successfully.',
         toastCopied: 'Text copied as HTML.',
@@ -143,7 +147,6 @@ function showToast(message, type = 'info') {
     else icon = 'ℹ️';
     
     toast.innerHTML = `${icon} ${message}`;
-    
     toastContainer.appendChild(toast);
     
     setTimeout(() => toast.classList.add('show'), 10);
@@ -240,6 +243,20 @@ window.insertFormat = function(format) {
             newCursorStart = startPos + 2;
             newCursorEnd = newCursorStart + selected.length;
         }
+    } else if (format === '1. ') {
+        // NUMBERED LIST AUTO-INCREMENT
+        const lines = before.split('\n');
+        const lastLine = lines[lines.length - 1];
+        const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
+        let nextNum = 1;
+        
+        if (numMatch) {
+            nextNum = parseInt(numMatch[1]) + 1;
+        }
+        
+        newText = before + `\n${nextNum}. ` + selected + after;
+        newCursorStart = startPos + 3;
+        newCursorEnd = newCursorStart + selected.length;
     } else if (format.includes('# ') && !format.includes('[')) {
         const lines = selected.trim().split('\n').filter(l => l.trim());
         newText = before + (lines.length ? lines.map(l => format + l).join('\n') : format) + after;
@@ -285,6 +302,41 @@ window.insertFormat = function(format) {
 };
 
 // =============================================
+// KEYBOARD EVENT HANDLER WITH NUMBERED LIST LOGIC
+// =============================================
+function handleEditorKeydown(e) {
+    if (e.key === 'Enter') {
+        const pos = editor.selectionStart;
+        const textUpToCursor = editor.value.substring(0, pos);
+        const lines = textUpToCursor.split('\n');
+        const lastLine = lines[lines.length - 1];
+        
+        // Check if previous line starts with number pattern (1. )
+        const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
+        if (numMatch) {
+            e.preventDefault();
+            const nextNum = parseInt(numMatch[1]) + 1;
+            const insertText = `\n${nextNum}. `;
+            editor.setRangeText(insertText, pos, pos, 'end');
+            editor.selectionStart = editor.selectionEnd = pos + insertText.length;
+            editor.dispatchEvent(new Event('input'));
+            return;
+        }
+        
+        // Also check for bullet list (- or *)
+        const bulletMatch = /^\s*[-*]\s*$/.exec(lastLine);
+        if (bulletMatch) {
+            e.preventDefault();
+            const insertText = '\n- ';
+            editor.setRangeText(insertText, pos, pos, 'end');
+            editor.selectionStart = editor.selectionEnd = pos + insertText.length;
+            editor.dispatchEvent(new Event('input'));
+            return;
+        }
+    }
+}
+
+// =============================================
 // EVENT LISTENERS
 // =============================================
 function setupEventListeners() {
@@ -295,6 +347,7 @@ function setupEventListeners() {
         updateCursorPosition();
     });
     
+    editor.addEventListener('keydown', handleEditorKeydown);
     editor.addEventListener('keyup', updateCursorPosition);
     editor.addEventListener('click', updateCursorPosition);
 
@@ -336,10 +389,11 @@ function setupEventListeners() {
         });
     }
 
-    if (exportMd) exportMd.addEventListener('click', () => { downloadFile(editor.value, 'document.md', 'text/markdown'); showToast(translations[currentLanguage].toastExport.replace('{type}', 'MD'), 'success'); });
-    if (exportTxt) exportTxt.addEventListener('click', () => { downloadFile(editor.value, 'document.txt', 'text/plain'); showToast(translations[currentLanguage].toastExport.replace('{type}', 'TXT'), 'success'); });
-    if (exportPdf) exportPdf.addEventListener('click', () => { window.print(); showToast('PDF Print Dialog Opened', 'info'); });
-    if (exportHtml) exportHtml.addEventListener('click', () => { exportAsHTML(); showToast(translations[currentLanguage].toastExport.replace('{type}', 'HTML'), 'success'); });
+    // Export Buttons
+    if (exportMd) exportMd.addEventListener('click', () => { downloadFile(editor.value, 'document.md', 'text/markdown'); showToast(translations[currentLanguage].toastExportMD, 'success'); });
+    if (exportTxt) exportTxt.addEventListener('click', () => { downloadFile(editor.value, 'document.txt', 'text/plain'); showToast(translations[currentLanguage].toastExportTXT, 'success'); });
+    if (exportPdf) exportPdf.addEventListener('click', () => { window.print(); showToast(currentLanguage === 'el' ? 'Παράθυρο Εκτύπωσης' : 'Print Dialog', 'info'); });
+    if (exportHtml) exportHtml.addEventListener('click', () => { exportAsHTML(); showToast(translations[currentLanguage].toastExportHTML, 'success'); });
 
     if (openFileBtn) openFileBtn.addEventListener('click', () => { if (fileInput) fileInput.click(); });
     if (fileInput) fileInput.addEventListener('change', handleFileOpen);
@@ -404,7 +458,7 @@ function setupEventListeners() {
     });
 
     // ============================================
-    // CUSTOM CONTEXT MENU
+    // CUSTOM CONTEXT MENU (FIXED PASTE ICON)
     // ============================================
     editor.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -421,20 +475,17 @@ function setupEventListeners() {
                 <div class="ctx-divider"></div>
                 <div class="ctx-item" onclick="execCmd('cut')"><span>✂️</span> ${t.ctxCut}</div>
                 <div class="ctx-item" onclick="execCmd('copy')"><span>📋</span> ${t.ctxCopy}</div>
-                <div class="ctx-item" onclick="execCmd('paste')"><span>粘贴</span> ${t.ctxPaste}</div>
+                <div class="ctx-item" onclick="execCmd('paste')"><span>📋</span> ${t.ctxPaste}</div>
             </div>
         `;
         
-        // Remove existing context menus
         const existingMenu = document.querySelector('.custom-context-menu');
         if (existingMenu) existingMenu.remove();
         
-        // Add new menu
         const menu = document.createElement('div');
         menu.innerHTML = menuHTML;
         document.body.appendChild(menu);
         
-        // Close on click outside
         const closeMenu = () => {
             if (document.querySelector('.custom-context-menu')) {
                 document.querySelector('.custom-context-menu').remove();
@@ -445,7 +496,7 @@ function setupEventListeners() {
     });
 
     // ============================================
-    // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
+    // AUTO-CLOSE BRACKETS (FINAL FIXED CURSOR POSITION)
     // ============================================
     if (editor) {
         editor.addEventListener('keydown', function(e) {
@@ -462,7 +513,7 @@ function setupEventListeners() {
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 1;
+                editor.selectionStart = editor.selectionEnd = pos + 2; // FIXED: 2 asterisks after
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
@@ -472,7 +523,7 @@ function setupEventListeners() {
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 1;
+                editor.selectionStart = editor.selectionEnd = pos + 2; // FIXED: 2 underscores after
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
@@ -672,6 +723,11 @@ const cheatsheetData = {
             { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
             { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },
             { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' },
+                        { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' },
+            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' },
+            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
+            { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },
+            { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' },
             { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' },
             { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' },
             { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }
@@ -712,7 +768,7 @@ const cheatsheetData = {
 };
 
 // =============================================
-// UPDATED STATS CALCULATION
+// STATS CALCULATION
 // =============================================
 function updateStats() {
     const text = editor.value;
@@ -747,7 +803,7 @@ function updateStats() {
 }
 
 // =============================================
-// START
+// START INITIALIZATION
 // =============================================
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();

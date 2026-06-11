@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Μινιμαλιστικός επεξεργαστής Markdown - Χρήστος Κουλαξίζης</title>
+    <title>Επεξεργαστής Markdown - Χρήστος Κουλαξίζης</title>
     
     <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -19,22 +19,22 @@
     <!-- Top Bar -->
     <header class="top-bar">
         <div class="left-section">
-            <button id="lang-toggle" class="icon-btn" title="Switch Language">EL/EN</button>
-            <button id="theme-toggle" class="icon-btn" title="Toggle Theme">☀️/🌙</button>
+            <button id="lang-toggle" class="icon-btn" title="Switch Language / Εναλλαγή Γλώσσας">EL/EN</button>
+            <button id="theme-toggle" class="icon-btn" title="Toggle Theme / Εναλλαγή Θέματος">☀️/🌙</button>
             <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
-            <button id="clear-content-btn" class="icon-btn" title="Εκκαθάριση Περιεχομένου">🗑️</button>
-            <button id="open-file-btn" class="icon-btn" title="Άνοιγμα Αρχείου">📂</button>
+            <button id="clear-content-btn" class="icon-btn" title="Clear Content / Εκκαθάριση Περιεχομένου">🗑️</button>
+            <button id="open-file-btn" class="icon-btn" title="Open File / Άνοιγμα Αρχείου">📂</button>
             <input type="file" id="file-input" accept=".md,.txt" style="display:none;">
         </div>
         
-        <h1 id="page-title">Μινιμαλιστικός επεξεργαστής Markdown</h1>
+        <h1 id="page-title">Επεξεργαστής Markdown</h1>
         
         <div class="right-section">
-            <button id="export-html" class="btn" title="Εξαγωγή ως HTML">HTML</button>
-            <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
-            <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
-            <button id="export-pdf" class="btn" data-lang-key="exportPDF">PDF</button>
-            <button id="cheatsheet-btn" class="icon-btn" title="Markdown Cheat Sheet">?</button>
+            <button id="export-html" class="btn" title="Export as HTML / Εξαγωγή ως HTML">HTML</button>
+            <button id="export-md" class="btn" title="Export as MD / Εξαγωγή ως Markdown" data-lang-key="exportMD">MD</button>
+            <button id="export-txt" class="btn" title="Export as TXT / Εξαγωγή ως Κείμενο" data-lang-key="exportTXT">TXT</button>
+            <button id="export-pdf" class="btn" title="Print Document / Εκτύπωση" data-lang-key="exportPDF">PDF</button>
+            <button id="cheatsheet-btn" class="icon-btn" title="Markdown Cheat Sheet / Βοήθεια">?</button>
         </div>
     </header>
 
@@ -43,37 +43,36 @@
         <div class="mode-group">
             <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
             <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
-            <button id="mode-live" class="mode-btn" title="Live Preview" data-lang-key="liveMode">👁️ Live</button>
+            <button id="mode-live" class="mode-btn" title="Live Preview / Ζωντανή Προβολή" data-lang-key="liveMode">👁️ Live</button>
             <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
         </div>
         
         <div class="stats-toggle-group">
-            <label title="MD Clean vs Raw" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
+            <label title="MD Clean vs Raw / Καθαρή ή Πλήρης μέτρηση" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
                 <span data-lang-key="cleanStats">MD Clean</span>
             </label>
             
-            <label title="Auto-Close symbols" style="font-size:0.8rem; padding-left:10px; border-left:1px solid var(--border-color); margin-left:5px; display:flex; align-items:center; gap:5px;">
+            <label title="Auto-Close symbols / Αυτόματο κλείσιμο συμβόλων" style="font-size:0.8rem; padding-left:10px; border-left:1px solid var(--border-color); margin-left:5px; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="auto-close-toggle"> 
                 <span>Auto-Close</span>
             </label>
         </div>
 
-        <!-- Format Bar with NEW Word Wrap Toggle -->
+        <!-- Format Bar with Word Wrap Toggle -->
         <div class="format-bar" id="format-bar">
-             <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
-             <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
-             <button class="fmt-btn" title="Strikethrough" onclick="insertFormat('~~')">S̶</button>
-             <!-- NEW: Word Wrap Toggle Button -->
-             <button class="fmt-btn" id="word-wrap-toggle" title="Toggle Word Wrap">W</button> 
-             <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
-             <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
-             <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
-             <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
-             <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
-             <button class="fmt-btn" title="Quote" onclick="insertFormat('> ')">"</button>
-             <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
-             <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
+             <button class="fmt-btn" title="Bold / Έντονο (Ctrl+B)" onclick="insertFormat('**')">B</button>
+             <button class="fmt-btn" title="Italic / Πλάγιο (Ctrl+I)" onclick="insertFormat('*')">I</button>
+             <button class="fmt-btn" title="Strikethrough / Διαγράμμιση" onclick="insertFormat('~~')">S̶</button>
+             <button class="fmt-btn" id="word-wrap-toggle" title="Toggle Word Wrap / Εναλλαγή Συρραφής Γραμμών">W</button> 
+             <button class="fmt-btn" title="Heading 1 / Κεφαλίδα 1" onclick="insertFormat('# ')">H1</button>
+             <button class="fmt-btn" title="Heading 2 / Κεφαλίδα 2" onclick="insertFormat('## ')">H2</button>
+             <button class="fmt-btn" title="Heading 3 / Κεφαλίδα 3" onclick="insertFormat('### ')">H3</button>
+             <button class="fmt-btn" title="Link / Σύνδεσμος" onclick="insertFormat('[link](url)')">🔗</button>
+             <button class="fmt-btn" title="List / Λίστα" onclick="insertFormat('- ')">•</button>
+             <button class="fmt-btn" title="Quote / Παράθεση" onclick="insertFormat('> ')">"</button>
+             <button class="fmt-btn" title="Code Block / Μπλοκ Κώδικα" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
+             <button class="fmt-btn" title="Horizontal Line / Διαχωριστική" onclick="insertFormat('\n---\n')">—</button>
         </div>
         
         <div class="export-group" style="flex-grow: 1;"></div>
@@ -87,7 +86,7 @@
     <!-- Main Content -->
     <main class="main-container">
         <div id="edit-panel" class="panel active">
-            <textarea id="editor" class="editor-textarea" placeholder="Γράψε το markdown εδώ..." spellcheck="false"></textarea>
+            <textarea id="editor" class="editor-textarea" placeholder="Write your markdown here..." spellcheck="false"></textarea>
         </div>
 
         <div id="preview-panel" class="panel">
@@ -111,7 +110,7 @@
         </div>
     </main>
 
-    <!-- Footer -->
+    <!-- Footer (CENTERED) -->
     <footer class="footer">
         <div class="footer-main">
             <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
@@ -139,7 +138,7 @@
         <span>ESC για επαναφορά σε πλήρη προβολή</span>
     </div>
 
-    <!-- NEW: Global Toast Container -->
+    <!-- Global Toast Container -->
     <div id="toast-container"></div>
 
     <script src="script.js"></script>
