@@ -750,6 +750,17 @@ body.focus-mode.live-mode #preview-panel {
     border-color: var(--accent-color);
 }
 
+/* Clear button warning style */
+#clear-content-btn:hover {
+    background-color: #e74c3c !important;
+    border-color: #e74c3c !important;
+    color: white !important;
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+}
+
 /* =============================================
    RESPONSIVE
    ============================================= */

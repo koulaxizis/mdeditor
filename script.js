@@ -82,7 +82,7 @@ const wordCountEl = document.getElementById('word-count');
 const paraCountEl = document.getElementById('para-count');
 
 // =============================================
-// INITIALIZATION
+// INITIALIZATION (FIXED AUTO-CLOSE)
 // =============================================
 function init() {
     if (!editor || !pageTitle) { console.error("Critical elements not found."); return; }
@@ -96,9 +96,13 @@ function init() {
     if (currentStatsMode === 'md-clean' && mdStatsToggle) mdStatsToggle.checked = true;
     else if (mdStatsToggle) mdStatsToggle.checked = false;
     
-    // FIX 1: Load Auto-Close state correctly
-    autoCloseEnabled = localStorage.getItem(AUTO_CLOSE_KEY) === 'true';
+    // FIX: READ AUTO-CLOSE FROM STORAGE FIRST, BEFORE ANYTHING ELSE
+    const savedAutoClose = localStorage.getItem(AUTO_CLOSE_KEY);
+    autoCloseEnabled = (savedAutoClose === 'true');
+    
     if (autoCloseToggle) autoCloseToggle.checked = autoCloseEnabled;
+    
+    console.log("✓ Auto-Close loaded:", autoCloseEnabled); // Debug confirmation
     
     showStickyTip();
     setViewMode('split');
@@ -106,6 +110,20 @@ function init() {
     updateStats();
     
     setupEventListeners();
+    
+    // Setup Clear Content Button Listener (NEW)
+    const clearBtn = document.getElementById('clear-content-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Είστε σίγουροι ότι θέλετε να εκκαθαρίσετε όλο το περιεχόμενο;')) {
+                editor.value = '';
+                localStorage.setItem(STORAGE_KEY, '');
+                updatePreview();
+                updateStats();
+                editor.focus();
+            }
+        });
+    }
 }
 
 // =============================================
