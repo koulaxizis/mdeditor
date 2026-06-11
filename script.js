@@ -112,6 +112,7 @@ const preview = document.getElementById('preview-content');
 const pageBody = document.body;
 const pageTitle = document.getElementById('page-title');
 const formatBar = document.getElementById('format-bar');
+const editorPanel = document.getElementById('edit-panel');
 
 // Buttons & Controls
 const langToggle = document.getElementById('lang-toggle');
@@ -136,6 +137,9 @@ const autoCloseToggle = document.getElementById('auto-close-toggle');
 const charCountEl = document.getElementById('char-count');
 const wordCountEl = document.getElementById('word-count');
 const paraCountEl = document.getElementById('para-count');
+
+// Track if format bar click is pending
+let formatButtonClickPending = false;
 
 // =============================================
 // INITIALIZATION
@@ -180,6 +184,71 @@ function init() {
 }
 
 // =============================================
+// GLOBAL FORMAT FUNCTION (MUST BE AVAILABLE EARLY)
+// =============================================
+function doInsertFormat(format) {
+    if (!editor) return;
+    
+    const startPos = editor.selectionStart;
+    const endPos = editor.selectionEnd;
+    const text = editor.value;
+    const before = text.substring(0, startPos);
+    const selected = text.substring(startPos, endPos);
+    const after = text.substring(endPos);
+    
+    let newText;
+    let newCursorStart, newCursorEnd;
+    
+    if (format.includes('# ') && !format.includes('[')) {
+        // Headers - add # before each line
+        const lines = selected.trim().split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+            newText = before + lines.map(line => format + line).join('\n') + after;
+        } else {
+            newText = before + format + after;
+        }
+        newCursorStart = startPos + format.length;
+        newCursorEnd = newCursorStart + selected.length;
+    } else if (format.includes('[') && format.includes(']')) {
+        // Links
+        const urlMatch = format.match(/\((.*?)\)/);
+        const url = urlMatch ? urlMatch[1] : '';
+        if (selected.trim()) {
+            newText = before + '[' + selected + '](' + url + ')' + after;
+        } else {
+            newText = before + '[link](' + url + ')' + after;
+            newCursorStart = startPos + 1;
+            newCursorEnd = newCursorStart;
+        }
+    } else if (format.includes('```\n')) {
+        // Code blocks
+        newText = before + format + '\n' + after;
+        newCursorStart = startPos + format.length + 1;
+        newCursorEnd = newCursorStart;
+    } else {
+        // Simple wrapping (bold, italic, lists)
+        newText = before + format + selected + format + after;
+        newCursorStart = startPos + format.length;
+        newCursorEnd = newCursorStart + selected.length;
+    }
+    
+    editor.value = newText;
+    
+    if (newCursorStart !== undefined) {
+        editor.selectionStart = newCursorStart;
+        editor.selectionEnd = newCursorEnd;
+    }
+    
+    editor.focus();
+    updatePreview();
+    updateStats();
+    localStorage.setItem(STORAGE_KEY, editor.value);
+}
+
+// Make it globally available
+window.insertFormat = doInsertFormat;
+
+// =============================================
 // EVENT LISTENERS SETUP - CENTRALIZED
 // =============================================
 function setupEventListeners() {
@@ -190,14 +259,35 @@ function setupEventListeners() {
         updateStats();
     });
     
-    // =================== FORMAT BAR ===================
+    // =================== FORMAT BAR SHOW/HIDE (FIXED) ===================
+    // Don't hide on format bar clicks!
     editor.addEventListener('focus', () => {
         if (formatBar) formatBar.classList.remove('hidden');
     });
     
-    editor.addEventListener('blur', () => {
-        if (formatBar) formatBar.classList.add('hidden');
+    // FIXED: Only hide if NOT clicking a format button
+    editor.addEventListener('blur', (e) => {
+        setTimeout(() => {
+            const activeEl = document.activeElement;
+            const isFormatButton = activeEl && (activeEl.classList.contains('fmt-btn') || activeEl.closest('.format-bar'));
+            
+            if (!isFormatButton) {
+                if (formatBar) formatBar.classList.add('hidden');
+            }
+        }, 150);
     });
+    
+    // Prevent format bar from being hidden when interacting with it
+    if (formatBar) {
+        formatBar.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Stop the blur on textarea
+            formatButtonClickPending = true;
+        });
+        
+        formatBar.addEventListener('click', (e) => {
+            formatButtonClickPending = false;
+        });
+    }
     
     // =================== THEME TOGGLE ===================
     themeToggle.addEventListener('click', () => {
@@ -276,24 +366,10 @@ function setupEventListeners() {
         });
     }
     
+    // =================== KEYBOARD HANDLERS ===================
     if (editor) {
-        editor.addEventListener('blur', (e) => {
-            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
-                setTimeout(() => {
-                    const activeEl = document.activeElement;
-                    const isFormatBtn = activeEl && activeEl.classList.contains('fmt-btn');
-                    const isToolbar = activeEl && activeEl.closest('.toolbar');
-                    const isCheatsheet = activeEl && activeEl.closest('.modal');
-                    
-                    if (!isFormatBtn && !isToolbar && !isCheatsheet) {
-                        pageBody.classList.remove('live-editing');
-                    }
-                }, 150);
-            }
-        });
-        
-        // =================== KEYBOARD SHORTCUTS & AUTO-CLOSE ===================
-        editor.addEventListener('keydown', (e) => {
+        // Global keyboard shortcuts & ESCAPE
+        document.addEventListener('keydown', (e) => {
             // ESCAPE KEY
             if (e.key === 'Escape') {
                 if (pageBody.classList.contains('focus-mode')) {
@@ -303,56 +379,90 @@ function setupEventListeners() {
                     pageBody.classList.remove('live-editing');
                     e.preventDefault();
                 }
-                return;
             }
             
-            // AUTO-CLOSE BRACKETS
-            if (autoCloseEnabled) {
-                const pairs = {
-                    '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`'
-                };
-                
-                if (pairs[e.key]) {
-                    e.preventDefault();
-                    const startPos = editor.selectionStart;
-                    const endPos = editor.selectionEnd;
-                    const text = editor.value;
-                    const before = text.substring(0, startPos);
-                    const selected = text.substring(startPos, endPos);
-                    const after = text.substring(endPos);
-                    
-                    const closingChar = pairs[e.key];
-                    editor.value = before + e.key + selected + closingChar + after;
-                    
-                    editor.selectionStart = startPos + 1;
-                    editor.selectionEnd = startPos + 1 + selected.length;
-                    editor.focus();
-                    
-                    updatePreview();
-                    updateStats();
-                    localStorage.setItem(STORAGE_KEY, editor.value);
-                    return;
-                }
-            }
-            
-            // KEYBOARD SHORTCUTS (Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+H)
+            // KEYBOARD SHORTCUTS (Ctrl/Cmd+B, I, K, H)
             if (e.ctrlKey || e.metaKey) {
                 if (e.key.toLowerCase() === 'b') {
                     e.preventDefault();
-                    insertFormat('**');
+                    doInsertFormat('**');
                 }
                 if (e.key.toLowerCase() === 'i') {
                     e.preventDefault();
-                    insertFormat('*');
+                    doInsertFormat('*');
                 }
                 if (e.key.toLowerCase() === 'k') {
                     e.preventDefault();
-                    insertFormat('[link](https://example.com)');
+                    doInsertFormat('[link](https://example.com)');
                 }
                 if (e.key.toLowerCase() === 'h') {
                     e.preventDefault();
-                    insertFormat('# ');
+                    doInsertFormat('# ');
                 }
+            }
+        });
+        
+        // AUTO-CLOSE BRACKETS (in editor only)
+        editor.addEventListener('keydown', (e) => {
+            if (!autoCloseEnabled) return;
+            
+            // Skip if Shift is pressed (allows typing multiple symbols)
+            if (e.shiftKey) return;
+            
+            const pairs = {
+                '(': ')',
+                '[': ']',
+                '{': '}',
+                '"': '"',
+                "'": "'",
+                '`': '`'
+            };
+            
+            // Special case: asterisk for bold/italic
+            if (e.key === '*' && autoCloseEnabled) {
+                e.preventDefault();
+                const startPos = editor.selectionStart;
+                const endPos = editor.selectionEnd;
+                const text = editor.value;
+                const before = text.substring(0, startPos);
+                const selected = text.substring(startPos, endPos);
+                const after = text.substring(endPos);
+                
+                // Insert ** instead of just *
+                const newText = before + '**' + selected + '**' + after;
+                editor.value = newText;
+                
+                // Position cursor between the two asterisks
+                editor.selectionStart = startPos + 1;
+                editor.selectionEnd = startPos + 1 + selected.length;
+                editor.focus();
+                
+                updatePreview();
+                updateStats();
+                localStorage.setItem(STORAGE_KEY, editor.value);
+                return;
+            }
+            
+            if (pairs[e.key]) {
+                e.preventDefault();
+                const startPos = editor.selectionStart;
+                const endPos = editor.selectionEnd;
+                const text = editor.value;
+                const before = text.substring(0, startPos);
+                const selected = text.substring(startPos, endPos);
+                const after = text.substring(endPos);
+                
+                const closingChar = pairs[e.key];
+                editor.value = before + e.key + selected + closingChar + after;
+                
+                // Position cursor AFTER the opening character
+                editor.selectionStart = startPos + 1;
+                editor.selectionEnd = startPos + 1 + selected.length;
+                editor.focus();
+                
+                updatePreview();
+                updateStats();
+                localStorage.setItem(STORAGE_KEY, editor.value);
             }
         });
     }
@@ -528,68 +638,6 @@ function populateCheatsheet() {
         </div>
     `).join('');
 }
-
-// =============================================
-// FORMAT BUTTON INSERT FUNCTION (GLOBAL)
-// =============================================
-window.insertFormat = function(format) {
-    if (!editor) return;
-    
-    const startPos = editor.selectionStart;
-    const endPos = editor.selectionEnd;
-    const text = editor.value;
-    const before = text.substring(0, startPos);
-    const selected = text.substring(startPos, endPos);
-    const after = text.substring(endPos);
-    
-    let newText;
-    let newCursorStart, newCursorEnd;
-    
-    if (format.includes('# ')) {
-        // Headers - add # before each line
-        const lines = selected.trim().split('\n').filter(l => l.trim());
-        if (lines.length > 0) {
-            newText = before + lines.map(line => format + line).join('\n') + after;
-        } else {
-            newText = before + format + after;
-        }
-        newCursorStart = startPos + format.length;
-        newCursorEnd = newCursorStart + selected.length;
-    } else if (format.includes('[') && format.includes(']')) {
-        // Links
-        const urlMatch = format.match(/\((.*?)\)/);
-        const url = urlMatch ? urlMatch[1] : '';
-        if (selected.trim()) {
-            newText = before + '[' + selected + '](' + url + ')' + after;
-        } else {
-            newText = before + '[link](' + url + ')' + after;
-            newCursorStart = startPos + 1;
-            newCursorEnd = newCursorStart;
-        }
-    } else if (format.includes('```\n')) {
-        // Code blocks
-        newText = before + format + '\n' + after;
-        newCursorStart = startPos + format.length + 1;
-        newCursorEnd = newCursorStart;
-    } else {
-        // Simple wrapping (bold, italic, lists)
-        newText = before + format + selected + format + after;
-        newCursorStart = startPos + format.length;
-        newCursorEnd = newCursorStart + selected.length;
-    }
-    
-    editor.value = newText;
-    
-    if (newCursorStart !== undefined) {
-        editor.selectionStart = newCursorStart;
-        editor.selectionEnd = newCursorEnd;
-    }
-    
-    editor.focus();
-    updatePreview();
-    updateStats();
-    localStorage.setItem(STORAGE_KEY, editor.value);
-};
 
 // =============================================
 // STATISTICS CALCULATION
