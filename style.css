@@ -912,6 +912,83 @@ body.focus-mode.live-mode #preview-panel {
     margin-right: 0;
 }
 
+#version-info {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+/* =============================================
+   RESTRUCTURED STATS BAR (FIXED LAYOUT)
+   ============================================= */
+.stats-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* More vertical space between lines */
+    padding: 0.6rem 1.2rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    min-height: 60px; /* Ensure enough height for 2 lines */
+}
+
+/* General Row Styling */
+.stats-row {
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center;
+    gap: 12px; /* Space between items */
+    flex-wrap: wrap; /* Allow wrapping if screen is small */
+    width: 100%;
+}
+
+/* Main Stats Row (Words, Chars, Paras) */
+.main-stats {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Meta Stats Row (Reading Time, Cursor) */
+.meta-stats {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.8rem; /* Slightly smaller */
+    opacity: 0.9;
+}
+
+/* Individual Stat Items */
+.stats-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap; /* CRITICAL: Prevents the numbers from breaking inside */
+}
+
+.stats-row strong {
+    color: var(--accent-color);
+    font-weight: 700;
+    letter-spacing: 0.3px; /* Better readability for numbers */
+}
+
+/* Separator styling */
+.stats-row span:nth-child(odd) {
+    /* This targets the separators if they are in specific positions, 
+       but better to target the '|' specifically if needed */
+}
+
+/* Specific fix for the separator '|' to have breathing room */
+.stats-row > span:not(:last-child):not(:first-child) {
+    margin: 0 2px;
+}
+
+/* Ensure the cursor label doesn't look cramped */
+#cursor-line, #cursor-col {
+    font-family: monospace; /* Make numbers uniform width */
+    font-variant-numeric: tabular-nums;
+    min-width: 1ch;
+    text-align: right;
+}
+
 /* =============================================
    RESPONSIVE
    ============================================= */
