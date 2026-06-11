@@ -10,12 +10,74 @@ const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
-let autoCloseEnabled = false; // Default false, toggled by user
+let autoCloseEnabled = false; // Default value, will be set in init()
 
 // Translations Object
 const translations = {
-    el: { pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown', editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel', liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT', exportPDF: 'PDF', cheatSheetTitle: 'Cheat Sheet Markdown', chars: 'χαρακτήρες', words: 'λέξεις', paragraphs: 'παράγραφοι', cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Βασικά', advanced: 'Προχωρημένα', closeTip: 'Κλείσιμο' },
-    en: { pageTitle: 'Minimalist Markdown Editor', editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View', liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT', exportPDF: 'PDF', cheatSheetTitle: 'Markdown Cheat Sheet', chars: 'characters', words: 'words', paragraphs: 'paragraphs', cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Basics', advanced: 'Advanced', closeTip: 'Close' }
+    el: {
+        pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown',
+        editMode: 'Επεξεργασία',
+        previewMode: 'Προεπισκόπηση',
+        splitMode: 'Διπλό Panel',
+        liveMode: '👁️ Live',
+        focusMode: '⦿ Focus',
+        exportMD: 'MD',
+        exportTXT: 'TXT',
+        exportPDF: 'PDF',
+        cheatSheetTitle: 'Cheat Sheet Markdown',
+        heading1: 'Κεφαλίδα 1ου επιπέδου',
+        heading2: 'Κεφαλίδα 2ου επιπέδου',
+        heading3: 'Κεφαλίδα 3ου επιπέδου',
+        bold: 'Έντονο',
+        italic: 'Πλάγιο',
+        link: 'Σύνδεσμος',
+        image: 'Εικόνα',
+        list: 'Λίστα με κουκκίδες',
+        orderedList: 'Αριθμημένη λίστα',
+        codeBlock: 'Μπλοκ κώδικα',
+        quote: 'Παράθεση',
+        table: 'Πίνακας',
+        chars: 'χαρακτήρες',
+        words: 'λέξεις',
+        paragraphs: 'παράγραφοι',
+        cleanStats: 'MD Clean',
+        autoClose: 'Auto-Close',
+        basic: 'Βασικά',
+        advanced: 'Προχωρημένα',
+        closeTip: 'Κλείσιμο'
+    },
+    en: {
+        pageTitle: 'Minimalist Markdown Editor',
+        editMode: 'Edit',
+        previewMode: 'Preview',
+        splitMode: 'Split View',
+        liveMode: '👁️ Live',
+        focusMode: '⦿ Focus',
+        exportMD: 'MD',
+        exportTXT: 'TXT',
+        exportPDF: 'PDF',
+        cheatSheetTitle: 'Markdown Cheat Sheet',
+        heading1: 'Heading Level 1',
+        heading2: 'Heading Level 2',
+        heading3: 'Heading Level 3',
+        bold: 'Bold',
+        italic: 'Italic',
+        link: 'Link',
+        image: 'Image',
+        list: 'Bullet List',
+        orderedList: 'Ordered List',
+        codeBlock: 'Code Block',
+        quote: 'Quote',
+        table: 'Table',
+        chars: 'characters',
+        words: 'words',
+        paragraphs: 'paragraphs',
+        cleanStats: 'MD Clean',
+        autoClose: 'Auto-Close',
+        basic: 'Basics',
+        advanced: 'Advanced',
+        closeTip: 'Close'
+    }
 };
 
 const tips = {
@@ -82,10 +144,13 @@ const wordCountEl = document.getElementById('word-count');
 const paraCountEl = document.getElementById('para-count');
 
 // =============================================
-// INITIALIZATION (FIXED AUTO-CLOSE)
+// INITIALIZATION
 // =============================================
 function init() {
-    if (!editor || !pageTitle) { console.error("Critical elements not found."); return; }
+    if (!editor || !pageTitle) {
+        console.error("Critical elements not found.");
+        return;
+    }
 
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) editor.value = savedContent;
@@ -96,13 +161,14 @@ function init() {
     if (currentStatsMode === 'md-clean' && mdStatsToggle) mdStatsToggle.checked = true;
     else if (mdStatsToggle) mdStatsToggle.checked = false;
     
-    // FIX: READ AUTO-CLOSE FROM STORAGE FIRST, BEFORE ANYTHING ELSE
+    // FIX: Load Auto-Close state from localStorage FIRST
     const savedAutoClose = localStorage.getItem(AUTO_CLOSE_KEY);
     autoCloseEnabled = (savedAutoClose === 'true');
     
-    if (autoCloseToggle) autoCloseToggle.checked = autoCloseEnabled;
-    
-    console.log("✓ Auto-Close loaded:", autoCloseEnabled); // Debug confirmation
+    if (autoCloseToggle) {
+        autoCloseToggle.checked = autoCloseEnabled;
+        console.log("✓ Initial Auto-Close state loaded:", autoCloseEnabled);
+    }
     
     showStickyTip();
     setViewMode('split');
@@ -110,20 +176,6 @@ function init() {
     updateStats();
     
     setupEventListeners();
-    
-    // Setup Clear Content Button Listener (NEW)
-    const clearBtn = document.getElementById('clear-content-btn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            if (confirm('Είστε σίγουροι ότι θέλετε να εκκαθαρίσετε όλο το περιεχόμενο;')) {
-                editor.value = '';
-                localStorage.setItem(STORAGE_KEY, '');
-                updatePreview();
-                updateStats();
-                editor.focus();
-            }
-        });
-    }
 }
 
 // =============================================
@@ -131,7 +183,10 @@ function init() {
 // =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
-    if (localStorage.getItem('tip-closed') === 'true') { tipBanner.classList.add('hidden'); return; }
+    if (localStorage.getItem('tip-closed') === 'true') {
+        tipBanner.classList.add('hidden');
+        return;
+    }
     
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
@@ -144,7 +199,10 @@ function showStickyTip() {
         btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px;';
         btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
         btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.backgroundColor = 'transparent'; };
-        btn.onclick = () => { tipBanner.classList.add('hidden'); localStorage.setItem('tip-closed', 'true'); };
+        btn.onclick = () => {
+            tipBanner.classList.add('hidden');
+            localStorage.setItem('tip-closed', 'true');
+        };
         tipBanner.appendChild(btn);
     }
     tipBanner.classList.remove('hidden');
@@ -165,20 +223,17 @@ window.insertFormat = function(format) {
     
     let newText, newCursorStart, newCursorEnd;
     
-    // FIX 2: Corrected List format
+    // FIX: Corrected List format (was '- -', now '- ')
     if (format === '- ') {
-        // Insert list item at current line
         const lines = before.split('\n');
         const lastLine = lines[lines.length - 1];
         const hasListPrefix = /^\s*[-*]\s/.test(lastLine);
         
         if (hasListPrefix) {
-            // If already a list item, just indent? Or skip? Let's just add new line
-             newText = text + '\n- ';
-             newCursorStart = startPos + 2; // Move after new dash
-             newCursorEnd = newCursorStart;
+            newText = text + '\n- ';
+            newCursorStart = startPos + 2;
+            newCursorEnd = newCursorStart;
         } else {
-            // Add bullet to current line
             newText = before + format + selected + after;
             newCursorStart = startPos + 2;
             newCursorEnd = newCursorStart + selected.length;
@@ -258,12 +313,15 @@ function setupEventListeners() {
         updateStats();
     });
     
-    // FIX 1: Auto-Close Toggle Listener
+    // --- AUTO-CLOSE TOGGLE (CRITICAL FIX) ---
     if (autoCloseToggle) {
+        // Ensure state is synced on load (already done in init, but double-check here)
+        autoCloseToggle.checked = autoCloseEnabled;
+        
         autoCloseToggle.addEventListener('change', e => {
             autoCloseEnabled = e.target.checked;
             localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
-            console.log("Auto-Close enabled:", autoCloseEnabled); // Debug
+            console.log("✓ Auto-Close updated via checkbox:", autoCloseEnabled);
         });
     }
 
@@ -289,7 +347,21 @@ function setupEventListeners() {
         });
     }
 
-    // --- KEYBOARD SHORTCUTS (FIXED 3) ---
+    // --- CLEAR CONTENT BUTTON ---
+    const clearBtn = document.getElementById('clear-content-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Είστε σίγουροι ότι θέλετε να εκκαθαρίσετε όλο το περιεχόμενο;')) {
+                editor.value = '';
+                localStorage.setItem(STORAGE_KEY, '');
+                updatePreview();
+                updateStats();
+                editor.focus();
+            }
+        });
+    }
+
+    // --- KEYBOARD SHORTCUTS ---
     document.addEventListener('keydown', e => {
         const isEditorActive = document.activeElement === editor;
         
@@ -309,7 +381,6 @@ function setupEventListeners() {
             }
         }
 
-        // Shortcuts ONLY when typing in editor
         if (isEditorActive && (e.ctrlKey || e.metaKey)) {
             const key = e.key.toLowerCase();
             if (key === 'b') { e.preventDefault(); insertFormat('**'); }
@@ -320,18 +391,50 @@ function setupEventListeners() {
         }
     });
 
-    // --- AUTO-CLOSE BRACKETS (FIXED 1 & WORKING ON MANUAL TYPING) ---
+    // ============================================
+    // AUTO-CLOSE BRACKETS (COMPLETELY REWRITTEN)
+    // ============================================
     if (editor) {
-        editor.addEventListener('keydown', e => {
-            // Strict check: Only run if enabled, single char, and no modifiers
-            if (!autoCloseEnabled) return;
-            if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
-            if (typeof e.key !== 'string' || e.key.length !== 1) return; 
+        editor.addEventListener('keydown', function(e) {
+            // DEBUG LOGS
+            console.log("KeyDown Event:", { 
+                key: e.key, 
+                length: e.key?.length, 
+                enabled: autoCloseEnabled,
+                activeElement: document.activeElement === editor,
+                modifiers: { shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey }
+            });
             
-            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+            // Check 1: Is Auto-Close enabled?
+            if (!autoCloseEnabled) {
+                console.log("❌ Auto-Close is DISABLED");
+                return;
+            }
+            
+            // Check 2: No modifier keys (Shift, Ctrl, etc.)
+            if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) {
+                console.log("❌ Modifier key pressed");
+                return;
+            }
+            
+            // Check 3: Is it a single character?
+            if (typeof e.key !== 'string' || e.key.length !== 1) {
+                console.log("❌ Not a single character");
+                return;
+            }
+            
+            const pairs = { 
+                '(': ')', 
+                '[': ']', 
+                '{': '}', 
+                '"': '"', 
+                "'": "'", 
+                '`': '`' 
+            };
             
             // Special case: asterisk -> **
             if (e.key === '*') {
+                console.log("✅ Processing * for bold");
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
@@ -342,6 +445,7 @@ function setupEventListeners() {
             
             // Special case: underscore -> __
             if (e.key === '_') {
+                console.log("✅ Processing _ for italic");
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
@@ -352,12 +456,16 @@ function setupEventListeners() {
             
             // Regular pairs
             if (pairs[e.key]) {
+                console.log(`✅ Processing pair: ${e.key}`);
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'select');
                 editor.dispatchEvent(new Event('input'));
+                return;
             }
+            
+            console.log("ℹ️ Character not in pairs list");
         });
     }
 }
@@ -379,15 +487,25 @@ function showFocusToast() {
 // =============================================
 // HELPERS
 // =============================================
-function applyTheme(theme) { document.documentElement.setAttribute('data-theme', theme); currentTheme = theme; localStorage.setItem(THEME_KEY, theme); }
+function applyTheme(theme) { 
+    document.documentElement.setAttribute('data-theme', theme); 
+    currentTheme = theme; 
+    localStorage.setItem(THEME_KEY, theme); 
+}
 
 function applyLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem(LANGUAGE_KEY, lang);
     document.documentElement.lang = lang;
     if (pageTitle) pageTitle.textContent = translations[lang].pageTitle;
-    document.querySelectorAll('[data-lang-key]').forEach(btn => { const key = btn.getAttribute('data-lang-key'); if (translations[lang][key]) btn.textContent = translations[lang][key]; });
-    document.querySelectorAll('.stat-label').forEach((label, idx) => { const keys = ['chars', 'words', 'paragraphs']; if (keys[idx]) label.textContent = translations[lang][keys[idx]]; });
+    document.querySelectorAll('[data-lang-key]').forEach(btn => { 
+        const key = btn.getAttribute('data-lang-key'); 
+        if (translations[lang][key]) btn.textContent = translations[lang][key]; 
+    });
+    document.querySelectorAll('.stat-label').forEach((label, idx) => { 
+        const keys = ['chars', 'words', 'paragraphs']; 
+        if (keys[idx]) label.textContent = translations[lang][keys[idx]]; 
+    });
     if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) populateCheatsheet();
     const closeTip = document.querySelector('.close-tip-btn');
     if (closeTip) closeTip.title = translations[lang].closeTip || 'Close';
@@ -404,9 +522,14 @@ function setViewMode(mode) {
     }
 }
 
-function toggleFocusMode() { pageBody.classList.toggle('focus-mode'); modeFocus?.classList.toggle('active'); }
+function toggleFocusMode() { 
+    pageBody.classList.toggle('focus-mode'); 
+    modeFocus?.classList.toggle('active'); 
+}
 
-function updatePreview() { preview.innerHTML = typeof marked !== 'undefined' ? marked.parse(editor.value) : '<p style="color:red">Error</p>'; }
+function updatePreview() { 
+    preview.innerHTML = typeof marked !== 'undefined' ? marked.parse(editor.value) : '<p style="color:red">Error</p>'; 
+}
 
 function downloadFile(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType });
@@ -431,12 +554,48 @@ function populateCheatsheet() {
 
 const cheatsheetData = {
     el: {
-        basic: [{ title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' }, { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' }, { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' }, { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' }, { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' }, { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' }, { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' }, { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }],
-        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Τρία backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Ένα backtick' }, { title: 'Blockquote', example: '> Παράθεση', desc: 'Προσθήκη >' }, { title: 'Εικόνα', example: '![Alt](url)', desc: 'Όμοιο με σύνδεσμο + !' }, { title: 'Πίνακας', example: '| A | B |', desc: 'Χρήση |' }, { title: 'Διαχωριστική', example: '---', desc: 'Τρεις παύλες' }, { title: 'Υπογράμμιση', example: '<u>Text</u>', desc: 'HTML tag' }, { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }]
+        basic: [
+            { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' },
+            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' },
+            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
+            { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },
+            { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' },
+            { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' },
+            { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' },
+            { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }
+        ],
+        advanced: [
+            { title: 'Code Block', example: '```\ncode\n```', desc: 'Τρία backticks' },
+            { title: 'Inline Code', example: '`code`', desc: 'Ένα backtick' },
+            { title: 'Blockquote', example: '> Παράθεση', desc: 'Προσθήκη >' },
+            { title: 'Εικόνα', example: '![Alt](url)', desc: 'Όμοιο με σύνδεσμο + !' },
+            { title: 'Πίνακας', example: '| A | B |', desc: 'Χρήση |' },
+            { title: 'Διαχωριστική', example: '---', desc: 'Τρεις παύλες' },
+            { title: 'Υπογράμμιση', example: '<u>Text</u>', desc: 'HTML tag' },
+            { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }
+        ]
     },
     en: {
-        basic: [{ title: 'Heading 1', example: '# Heading', desc: 'One #' }, { title: 'Heading 2', example: '## Heading', desc: 'Two ##' }, { title: 'Heading 3', example: '### Heading', desc: 'Three ###' }, { title: 'Bold', example: '**text**', desc: 'Double asterisks' }, { title: 'Italic', example: '*text*', desc: 'Single asterisk' }, { title: 'Link', example: '[Title](url)', desc: '[Text](URL)' }, { title: 'List', example: '- Item', desc: 'Starts with -' }, { title: 'Ordered', example: '1. Item', desc: 'Starts with number.' }],
-        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Triple backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Single backtick' }, { title: 'Blockquote', example: '> Quote', desc: 'Add >' }, { title: 'Image', example: '![Alt](url)', desc: 'Like link with !' }, { title: 'Table', example: '| A | B |', desc: 'Use |' }, { title: 'HR', example: '---', desc: 'Three dashes' }, { title: 'Underline', example: '<u>Text</u>', desc: 'HTML tag' }, { title: 'New Para', example: '\\n\\n', desc: 'Two empty lines' }]
+        basic: [
+            { title: 'Heading 1', example: '# Heading', desc: 'One #' },
+            { title: 'Heading 2', example: '## Heading', desc: 'Two ##' },
+            { title: 'Heading 3', example: '### Heading', desc: 'Three ###' },
+            { title: 'Bold', example: '**text**', desc: 'Double asterisks' },
+            { title: 'Italic', example: '*text*', desc: 'Single asterisk' },
+            { title: 'Link', example: '[Title](url)', desc: '[Text](URL)' },
+            { title: 'List', example: '- Item', desc: 'Starts with -' },
+            { title: 'Ordered', example: '1. Item', desc: 'Starts with number.' }
+        ],
+        advanced: [
+            { title: 'Code Block', example: '```\ncode\n```', desc: 'Triple backticks' },
+            { title: 'Inline Code', example: '`code`', desc: 'Single backtick' },
+            { title: 'Blockquote', example: '> Quote', desc: 'Add >' },
+            { title: 'Image', example: '![Alt](url)', desc: 'Like link with !' },
+            { title: 'Table', example: '| A | B |', desc: 'Use |' },
+            { title: 'HR', example: '---', desc: 'Three dashes' },
+            { title: 'Underline', example: '<u>Text</u>', desc: 'HTML tag' },
+            { title: 'New Para', example: '\\n\\n', desc: 'Two empty lines' }
+        ]
     }
 };
 
