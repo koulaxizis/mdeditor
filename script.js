@@ -15,28 +15,24 @@ const WORDS_PER_MINUTE = 200;
 
 const translations = {
     el: {
-        pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown',
-        editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel',
-        liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
+        pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown', editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση',
+        splitMode: 'Διπλό Panel', liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
         exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Άνοιγμα', cheatSheetTitle: 'Cheat Sheet Markdown',
         chars: 'χαρακτήρες', words: 'λέξεις', paragraphs: 'παράγραφοι', readingTime: 'ανάγνωση',
         cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Βασικά', advanced: 'Προχωρημένα',
         closeTip: 'Κλείσιμο', shortcuts: 'Συντομεύσεις Πληκτρολογίου', exitMode: 'Έξοδος Λειτουργίας',
-        fullGuide: 'Πλήρης Οδηγός Markdown', commonmark: 'CommonMark Spec',
-        mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα μορφοποίησης κειμένου, που δημιουργήθηκε από τον John Gruber το 2004.',
-        bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα'
+        fullGuide: 'Πλήρης Οδηγός Markdown', commonmark: 'CommonMark Spec', mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα.',
+        bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα', strikethrough: 'Διαγράμμιση'
     },
     en: {
-        pageTitle: 'Minimalist Markdown Editor',
-        editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View',
-        liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
+        pageTitle: 'Minimalist Markdown Editor', editMode: 'Edit', previewMode: 'Preview',
+        splitMode: 'Split View', liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
         exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Open', cheatSheetTitle: 'Markdown Cheat Sheet',
         chars: 'characters', words: 'words', paragraphs: 'paragraphs', readingTime: 'reading time',
         cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Basics', advanced: 'Advanced',
         closeTip: 'Close', shortcuts: 'Keyboard Shortcuts', exitMode: 'Exit Mode',
-        fullGuide: 'Full Markdown Guide', commonmark: 'CommonMark Spec',
-        mdDesc: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor.',
-        bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List'
+        fullGuide: 'Full Markdown Guide', commonmark: 'CommonMark Spec', mdDesc: 'Markdown is a lightweight markup language.',
+        bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List', strikethrough: 'Strikethrough'
     }
 };
 
@@ -133,9 +129,6 @@ function init() {
     setupEventListeners();
 }
 
-// =============================================
-// STICKY TIP
-// =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
     if (localStorage.getItem('tip-closed') === 'true') { tipBanner.classList.add('hidden'); return; }
@@ -158,7 +151,7 @@ function showStickyTip() {
 }
 
 // =============================================
-// GLOBAL FORMAT FUNCTION
+// GLOBAL FORMAT FUNCTION (UPDATED FOR STRIKETHROUGH)
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
@@ -208,9 +201,10 @@ window.insertFormat = function(format) {
         newText = before + format + after;
         newCursorStart = startPos + format.length;
         newCursorEnd = newCursorStart;
-    } else if (format === '<u>') {
-        newText = before + format + selected + '</u>' + after;
-        newCursorStart = startPos + 3;
+    } else if (format === '~~') {
+        // Strikethrough logic
+        newText = before + format + selected + format + after;
+        newCursorStart = startPos + 2;
         newCursorEnd = newCursorStart + selected.length;
     } else {
         newText = before + format + selected + format + after;
@@ -227,6 +221,7 @@ window.insertFormat = function(format) {
     updateCursorPosition();
     localStorage.setItem(STORAGE_KEY, editor.value);
 };
+
 // =============================================
 // EVENT LISTENERS
 // =============================================
@@ -335,7 +330,7 @@ function setupEventListeners() {
     });
 
     // ============================================
-    // AUTO-CLOSE BRACKETS (FINAL FIX)
+    // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
     // ============================================
     if (editor) {
         editor.addEventListener('keydown', function(e) {
@@ -352,13 +347,9 @@ function setupEventListeners() {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
-                // Insert the double asterisks
                 editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
-                
-                // CRITICAL: Force cursor to EXACTLY after the first asterisk
-                // We do this by setting selectionStart and End manually AFTER setRangeText
+                // CRITICAL: Set cursor EXACTLY after first asterisk
                 editor.selectionStart = editor.selectionEnd = pos + 1;
-                
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
@@ -368,12 +359,9 @@ function setupEventListeners() {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
-                // Insert double underscores
                 editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-                
-                // CRITICAL: Force cursor to EXACTLY after the first underscore
+                // CRITICAL: Set cursor EXACTLY after first underscore
                 editor.selectionStart = editor.selectionEnd = pos + 1;
-                
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
@@ -393,7 +381,7 @@ function setupEventListeners() {
 }
 
 // =============================================
-// NEW FEATURES IMPLEMENTATION
+// HELPERS & FEATURES
 // =============================================
 function exportAsHTML() {
     const markdown = editor.value;
@@ -413,6 +401,7 @@ function exportAsHTML() {
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
         th { background: #f4f4f4; }
+        s, del { text-decoration: line-through; }
     </style>
 </head>
 <body>${htmlContent}</body></html>`;
@@ -544,28 +533,54 @@ function populateCheatsheet() {
 const cheatsheetData = {
     el: {
         basic: [{ title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' }, { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' }, { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' }, { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' }, { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' }, { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' }, { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' }, { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }],
-        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Τρία backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Ένα backtick' }, { title: 'Blockquote', example: '> Παράθεση', desc: 'Προσθήκη >' }, { title: 'Εικόνα', example: '![Alt](url)', desc: 'Όμοιο με σύνδεσμο + !' }, { title: 'Πίνακας', example: '| A | B |', desc: 'Χρήση |' }, { title: 'Διαχωριστική', example: '---', desc: 'Τρεις παύλες' }, { title: 'Υπογράμμιση', example: '<u>Text</u>', desc: 'HTML tag' }, { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }]
+        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Τρία backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Ένα backtick' }, { title: 'Blockquote', example: '> Παράθεση', desc: 'Προσθήκη >' }, { title: 'Εικόνα', example: '![Alt](url)', desc: 'Όμοιο με σύνδεσμο + !' }, { title: 'Πίνακας', example: '| A | B |', desc: 'Χρήση |' }, { title: 'Διαχωριστική', example: '---', desc: 'Τρεις παύλες' }, { title: 'Διαγράμμιση', example: '~~κείμενο~~', desc: 'Δύο περισπωμένες' }, { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }]
     },
     en: {
         basic: [{ title: 'Heading 1', example: '# Heading', desc: 'One #' }, { title: 'Heading 2', example: '## Heading', desc: 'Two ##' }, { title: 'Heading 3', example: '### Heading', desc: 'Three ###' }, { title: 'Bold', example: '**text**', desc: 'Double asterisks' }, { title: 'Italic', example: '*text*', desc: 'Single asterisk' }, { title: 'Link', example: '[Title](url)', desc: '[Text](URL)' }, { title: 'List', example: '- Item', desc: 'Starts with -' }, { title: 'Ordered', example: '1. Item', desc: 'Starts with number.' }],
-        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Triple backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Single backtick' }, { title: 'Blockquote', example: '> Quote', desc: 'Add >' }, { title: 'Image', example: '![Alt](url)', desc: 'Like link with !' }, { title: 'Table', example: '| A | B |', desc: 'Use |' }, { title: 'HR', example: '---', desc: 'Three dashes' }, { title: 'Underline', example: '<u>Text</u>', desc: 'HTML tag' }, { title: 'New Para', example: '\\n\\n', desc: 'Two empty lines' }]
+        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Triple backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Single backtick' }, { title: 'Blockquote', example: '> Quote', desc: 'Add >' }, { title: 'Image', example: '![Alt](url)', desc: 'Like link with !' }, { title: 'Table', example: '| A | B |', desc: 'Use |' }, { title: 'HR', example: '---', desc: 'Three dashes' }, { title: 'Strikethrough', example: '~~text~~', desc: 'Double tildes' }, { title: 'New Para', example: '\\n\\n', desc: 'Two empty lines' }]
     }
 };
 
+// =============================================
+// UPDATED STATS CALCULATION (READING TIME FIX)
+// =============================================
 function updateStats() {
     const text = editor.value;
     let c, w, p, readingMins;
+    
     if (currentStatsMode === 'md-clean') {
-        const clean = text.replace(/^(#{1,6}\s)|^\s*[-*+]\s|^\s*\d+\.\s|\*\*(.*?)\*\*|\*(.*?)\*|!\[.*?\]\(.*?\)|\[.*?\]\(.*?\)|`(.*?)`|^>\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+        const clean = text
+            .replace(/^(#{1,6}\s)/gm, '')
+            .replace(/^\s*[-*+]\s+/gm, '')
+            .replace(/^\s*\d+\.\s+/gm, '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+            .replace(/`(.*?)`/g, '$1')
+            .replace(/^>\s+/gm, '');
         c = clean.length;
-        w = clean.trim() === '' ? 0 : clean.trim().split(/\s+/).filter(x => x).length;
-        p = clean.split(/\n\s*\n/).filter(x => x.trim()).length;
+        // Better word count: split by spaces and filter empty strings
+        w = clean.trim() === '' ? 0 : clean.trim().split(/\s+/).filter(x => x.length > 0).length;
+        p = clean.split(/\n\s*\n/).filter(x => x.trim().length > 0).length;
     } else {
         c = text.length;
-        w = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(x => x).length;
-        p = text.split(/\n\s*\n/).filter(x => x.trim()).length;
+        w = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(x => x.length > 0).length;
+        p = text.split(/\n\s*\n/).filter(x => x.trim().length > 0).length;
     }
-    readingMins = Math.ceil(w / WORDS_PER_MINUTE) || 0;
+    
+    // Calculate reading time
+    if (w === 0) {
+        readingMins = 0;
+    } else {
+        // Round up to nearest minute, but if less than 1 minute, show 0 until it hits 1?
+        // Actually, standard behavior: ceil(w / 200). 
+        // If w=10, 10/200 = 0.05 -> ceil = 1. This is expected for small text.
+        // If you want "0" until 100 words, use: w < 100 ? 0 : Math.ceil(w/200)
+        // Let's stick to standard Math.ceil, but ensure it doesn't jump erratically.
+        readingMins = Math.ceil(w / WORDS_PER_MINUTE);
+    }
+    
     if (charCountEl) charCountEl.textContent = c.toLocaleString();
     if (wordCountEl) wordCountEl.textContent = w.toLocaleString();
     if (paraCountEl) paraCountEl.textContent = p.toLocaleString();

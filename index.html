@@ -5,36 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Μινιμαλιστικός επεξεργαστής Markdown - Χρήστος Κουλαξίζης</title>
     
-    <!-- No Google Fonts - System fonts only -->
-    
+    <!-- No Google Fonts -->
     <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="style.css">
     
-    <!-- Meta Tags for Privacy -->
-    <meta name="description" content="Minimal Markdown Editor - No tracking, no ads, open source">
+    <meta name="description" content="Minimal Markdown Editor">
     <meta name="keywords" content="markdown, editor, open-source, privacy, minimal">
 </head>
 <body class="theme-light">
     
-    <!-- Language & Theme Toggle Bar -->
+    <!-- Top Bar -->
     <header class="top-bar">
         <div class="left-section">
             <button id="lang-toggle" class="icon-btn" title="Switch Language">EL/EN</button>
             <button id="theme-toggle" class="icon-btn" title="Toggle Theme">☀️/🌙</button>
             <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
             <button id="clear-content-btn" class="icon-btn" title="Εκκαθάριση Περιεχομένου">🗑️</button>
-            <!-- NEW: Open File Button -->
             <button id="open-file-btn" class="icon-btn" title="Άνοιγμα Αρχείου">📂</button>
-            <input type="file" id="file-input" accept=".md,.txt,text/markdown,text/plain" style="display:none;">
+            <input type="file" id="file-input" accept=".md,.txt" style="display:none;">
         </div>
         
         <h1 id="page-title">Μινιμαλιστικός επεξεργαστής Markdown</h1>
         
         <div class="right-section">
-            <!-- NEW: Export HTML Button -->
             <button id="export-html" class="btn" title="Εξαγωγή ως HTML">HTML</button>
             <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
             <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
@@ -48,27 +44,28 @@
         <div class="mode-group">
             <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
             <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
-            <button id="mode-live" class="mode-btn" title="Live Preview (Inline)" data-lang-key="liveMode">👁️ Live</button>
+            <button id="mode-live" class="mode-btn" title="Live Preview" data-lang-key="liveMode">👁️ Live</button>
             <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
         </div>
         
         <div class="stats-toggle-group">
-            <label title="MD Clean: Αγνοεί syntax χαρακτήρες | Raw: Μετρά όλα τα χαρακτήρα" style="font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; gap:5px;">
+            <label title="MD Clean vs Raw" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
                 <span data-lang-key="cleanStats">MD Clean</span>
             </label>
             
-            <label title="Αυτόματο κλείσιμο:" style="font-size:0.8rem; padding-left: 10px; border-left: 1px solid var(--border-color); margin-left: 5px; display:flex; align-items:center; gap:5px;">
+            <label title="Auto-Close symbols" style="font-size:0.8rem; padding-left:10px; border-left:1px solid var(--border-color); margin-left:5px; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="auto-close-toggle"> 
                 <span>Auto-Close</span>
             </label>
         </div>
 
-        <!-- Format Bar -->
+        <!-- Format Bar (Updated with Strikethrough) -->
         <div class="format-bar" id="format-bar">
              <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
              <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
-             <button class="fmt-btn" title="Underline" onclick="insertFormat('<u>')">U</button>
+             <!-- NEW: Strikethrough instead of Underline -->
+             <button class="fmt-btn" title="Strikethrough" onclick="insertFormat('~~')">S̶</button>
              <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
              <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
              <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
@@ -87,52 +84,38 @@
         <span id="tip-text"></span>
     </div>
 
-    <!-- Main Content Area -->
+    <!-- Main Content -->
     <main class="main-container">
         <div id="edit-panel" class="panel active">
-            <textarea 
-                id="editor" 
-                class="editor-textarea" 
-                placeholder="Γράψε το markdown εδώ..."
-                spellcheck="false"
-            ></textarea>
+            <textarea id="editor" class="editor-textarea" placeholder="Γράψε το markdown εδώ..." spellcheck="false"></textarea>
         </div>
 
         <div id="preview-panel" class="panel">
             <div id="preview-content" class="preview-wrapper"></div>
         </div>
 
-        <!-- Updated Stats Bar with Reading Time & Cursor -->
+        <!-- RESTRUCTURED STATS BAR (2 LINES) -->
         <div id="stats-bar" class="stats-bar">
-            <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
-            <span>|</span>
-            <span><strong><span id="word-count">0</span></strong> <span class="stat-label" data-lang-key="words">λέξεις</span></span>
-            <span>|</span>
-            <span><strong><span id="para-count">0</span></strong> <span class="stat-label" data-lang-key="paragraphs">παράγραφοι</span></span>
-            <span>|</span>
-            <span><strong>⏱️ <span id="reading-time">0</span> λεπτά</strong> <span class="stat-label">ανάγνωση</span></span>
-            <span>|</span>
-            <span><strong>📍 Γρ: <span id="cursor-line">1</span> | Στλ: <span id="cursor-col">1</span></strong></span>
+            <div class="stats-row main-stats">
+                <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
+                <span>|</span>
+                <span><strong><span id="word-count">0</span></strong> <span class="stat-label" data-lang-key="words">λέξεις</span></span>
+                <span>|</span>
+                <span><strong><span id="para-count">0</span></strong> <span class="stat-label" data-lang-key="paragraphs">παράγραφοι</span></span>
+            </div>
+            <div class="stats-row meta-stats">
+                <span><strong>⏱️ <span id="reading-time">0</span> λεπτά</strong> <span class="stat-label">ανάγνωση</span></span>
+                <span>|</span>
+                <span><strong>📍 Γρ: <span id="cursor-line">1</span> | Στλ: <span id="cursor-col">1</span></strong></span>
+            </div>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="footer-main">
-            <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
-        </div>
-        <div class="footer-sub">
-            <span>No cookies • No tracking • No ads • No Sponsors</span>
-        </div>
-        <div class="footer-legal">
-            <span>Licensed under MIT</span>
-            <span>•</span>
-            <span>Open Source</span>
-            <span>•</span>
-            <span>Privacy First</span>
-            <span>•</span>
-            <span>Minimal Design</span>
-        </div>
+        <div class="footer-main"><a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer">Σχεδιασμός: Χρήστος Κουλαξίζης</a></div>
+        <div class="footer-sub"><span>No cookies • No tracking • No ads • No Sponsors</span></div>
+        <div class="footer-legal"><span>Licensed under MIT</span> • <span>Open Source</span> • <span>Privacy First</span> • <span>Minimal Design</span></div>
     </footer>
 
     <!-- Cheatsheet Modal -->
@@ -146,7 +129,7 @@
         </div>
     </div>
 
-    <!-- Focus Mode Toast -->
+    <!-- Focus Toast -->
     <div id="focus-toast" class="focus-toast hidden">
         <span>ESC για επαναφορά σε πλήρη προβολή</span>
     </div>
