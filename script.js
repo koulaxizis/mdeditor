@@ -9,10 +9,10 @@ const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
-let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean'; // 'md-clean' or 'raw'
+let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = localStorage.getItem(AUTO_CLOSE_KEY) === 'true';
 
-// Translations Object - All commas properly placed
+// Translations Object
 const translations = {
     el: {
         pageTitle: 'Επεξεργαστής Markdown',
@@ -74,7 +74,7 @@ const translations = {
     }
 };
 
-// Tips (Random on each visit)
+// Tips
 const tips = {
     el: [
         '💡 Χρησιμοποίησε `#` για τίτλους (# H1, ## H2, ### H3)',
@@ -86,7 +86,8 @@ const tips = {
         '💡 Blockquote: `> κείμενο`',
         '💡 Η τοπική αποθήκευση διατηρεί τα κείμενά σου',
         '💡 Active Focus Mode με το κουμπί ⦿',
-        '💡 Activate MD Clean Stats για καθαρή καταμέτρηση λέξεων'
+        '💡 Activate MD Clean Stats για καθαρή καταμέτρηση λέξεων',
+        '💡 Στο Live mode πάτα κλικ στο κείμενο για να γράψεις'
     ],
     en: [
         '💡 Use `#` for headings (# H1, ## H2, ### H3)',
@@ -98,7 +99,8 @@ const tips = {
         '💡 Blockquote: `> text`',
         '💡 Local storage keeps your texts safe',
         '💡 Activate Focus Mode with ⦿ button',
-        '💡 Activate MD Clean Stats for word count without syntax'
+        '💡 Activate MD Clean Stats for word count without syntax',
+        '💡 In Live mode click text to edit'
     ]
 };
 
@@ -109,6 +111,7 @@ const editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
 const pageTitle = document.getElementById('page-title');
+const mainContainer = document.querySelector('.main-container');
 
 // Buttons & Controls
 const langToggle = document.getElementById('lang-toggle');
@@ -255,67 +258,122 @@ function setupEventListeners() {
         }
     });
     
-    // Escape key closes modal
+    // =============================================
+    // TRUE LIVE MODE LOGIC (Click-to-Edit)
+    // =============================================
+    
+    // Click on preview panel → enter edit mode (show textarea overlay)
+    if (preview && preview.parentElement) {
+        preview.parentElement.addEventListener('click', (e) => {
+            if (pageBody.classList.contains('live-mode') && 
+                !pageBody.classList.contains('live-editing') &&
+                !e.target.closest('.toolbar') &&
+                !e.target.closest('.top-bar')) {
+                
+                e.stopPropagation();
+                pageBody.classList.add('live-editing');
+                
+                if (editor) {
+                    editor.focus();
+                    editor.selectionStart = editor.value.length;
+                    editor.selectionEnd = editor.value.length;
+                }
+            }
+        });
+    }
+    
+    // Blur from editor in live mode → exit edit mode (show preview)
+    if (editor) {
+        editor.addEventListener('blur', (e) => {
+            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
+                setTimeout(() => {
+                    const activeEl = document.activeElement;
+                    const isFormatBtn = activeEl && activeEl.classList.contains('fmt-btn');
+                    const isToolbar = activeEl && activeEl.closest('.toolbar');
+                    const isCheatsheet = activeEl && activeEl.closest('.modal');
+                    
+                    if (!isFormatBtn && !isToolbar && !isCheatsheet) {
+                        pageBody.classList.remove('live-editing');
+                    }
+                }, 150);
+            }
+        });
+    }
+    
+    // Escape key exits Live Edit Mode
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (cheatsheetModal) cheatsheetModal.classList.add('hidden');
-            // Optional: Exit Focus Mode on Esc
+            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
+                cheatsheetModal.classList.add('hidden');
+            }
+            
             if (pageBody.classList.contains('focus-mode')) {
                 toggleFocusMode();
             }
+            
+            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
+                pageBody.classList.remove('live-editing');
+                e.preventDefault();
+            }
         }
         
-        // Keyboard shortcuts
+        // Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+K)
         if (e.ctrlKey || e.metaKey) {
-            if (e.key === 'b') {
+            if (e.key === 'b' || e.key === 'B') {
                 e.preventDefault();
                 insertFormat('**');
             }
-            if (e.key === 'i') {
+            if (e.key === 'i' || e.key === 'I') {
                 e.preventDefault();
                 insertFormat('*');
             }
-            if (e.key === 'k') {
+            if (e.key === 'k' || e.key === 'K') {
                 e.preventDefault();
-                insertFormat('[link](url)');
+                insertFormat('[link](https://example.com)');
+            }
+            if (e.key === 'h' || e.key === 'H') {
+                e.preventDefault();
+                insertFormat('# ');
             }
         }
     });
     
     // Auto-Close Brackets Logic
-    editor.addEventListener('keydown', (e) => {
-        if (!autoCloseEnabled) return;
-        
-        const pairs = {
-            '(': ')',
-            '[': ']',
-            '{': '}',
-            '"': '"',
-            "'": "'",
-            '`': '`'
-        };
-        
-        if (pairs[e.key]) {
-            e.preventDefault();
-            const startPos = editor.selectionStart;
-            const endPos = editor.selectionEnd;
-            const text = editor.value;
-            const before = text.substring(0, startPos);
-            const selected = text.substring(startPos, endPos);
-            const after = text.substring(endPos);
+    if (editor) {
+        editor.addEventListener('keydown', (e) => {
+            if (!autoCloseEnabled) return;
             
-            const closingChar = pairs[e.key];
-            editor.value = before + e.key + selected + closingChar + after;
+            const pairs = {
+                '(': ')',
+                '[': ']',
+                '{': '}',
+                '"': '"',
+                "'": "'",
+                '`': '`'
+            };
             
-            // Move cursor between the pair
-            editor.selectionStart = startPos + 1;
-            editor.selectionEnd = startPos + 1 + selected.length;
-            
-            editor.focus();
-            updatePreview();
-            updateStats();
-        }
-    });
+            if (pairs[e.key]) {
+                e.preventDefault();
+                const startPos = editor.selectionStart;
+                const endPos = editor.selectionEnd;
+                const text = editor.value;
+                const before = text.substring(0, startPos);
+                const selected = text.substring(startPos, endPos);
+                const after = text.substring(endPos);
+                
+                const closingChar = pairs[e.key];
+                editor.value = before + e.key + selected + closingChar + after;
+                
+                editor.selectionStart = startPos + 1;
+                editor.selectionEnd = startPos + 1 + selected.length;
+                
+                editor.focus();
+                updatePreview();
+                updateStats();
+                localStorage.setItem(STORAGE_KEY, editor.value);
+            }
+        });
+    }
 }
 
 // =============================================
@@ -335,10 +393,8 @@ function applyLanguage(lang) {
     localStorage.setItem(LANGUAGE_KEY, lang);
     document.documentElement.lang = lang;
     
-    // Update title
     if (pageTitle) pageTitle.textContent = translations[lang].pageTitle;
     
-    // Update all labels with data-lang-key
     const buttons = document.querySelectorAll('[data-lang-key]');
     buttons.forEach(btn => {
         const key = btn.getAttribute('data-lang-key');
@@ -347,34 +403,30 @@ function applyLanguage(lang) {
         }
     });
     
-    // Update stats labels
     const statLabels = document.querySelectorAll('.stat-label');
     statLabels.forEach((label, index) => {
-        if (index === 0 && label.dataset.langKey === 'chars') label.textContent = translations[lang].chars;
-        if (index === 1 && label.dataset.langKey === 'words') label.textContent = translations[lang].words;
-        if (index === 2 && label.dataset.langKey === 'paragraphs') label.textContent = translations[lang].paragraphs;
+        const key = label.dataset.langKey;
+        if (index === 0 && key === 'chars') label.textContent = translations[lang].chars;
+        if (index === 1 && key === 'words') label.textContent = translations[lang].words;
+        if (index === 2 && key === 'paragraphs') label.textContent = translations[lang].paragraphs;
     });
     
-    // Update cheatsheet if open
     if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
         populateCheatsheet();
     }
 }
 
 // =============================================
-// VIEW MODE HANDLER
+// VIEW MODE HANDLER (UPDATED for True Live)
 // =============================================
 function setViewMode(mode) {
-    // Remove all mode classes
-    pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode');
+    pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing');
     
-    // Reset all buttons
     if (modeEdit) modeEdit.classList.remove('active');
     if (modeLive) modeLive.classList.remove('active');
     if (modePreview) modePreview.classList.remove('active');
     if (modeSplit) modeSplit.classList.remove('active');
     
-    // Apply selected mode
     switch (mode) {
         case 'edit':
             pageBody.classList.add('edit-only');
@@ -496,8 +548,7 @@ function populateCheatsheet() {
 }
 
 // =============================================
-// FORMAT BUTTON INSERT FUNCTION
-// Exposed globally so onclick in HTML works
+// FORMAT BUTTON INSERT FUNCTION (Global)
 // =============================================
 window.insertFormat = function(format) {
     const startPos = editor.selectionStart;
@@ -510,33 +561,28 @@ window.insertFormat = function(format) {
     let newText;
     let newCursorPos;
     
-    // Handle different formats
     if (format.includes('# ')) {
-        // Headers - add # before each line
-        const lines = selected.split('\n');
-        const wrappedLines = lines.map(line => format + line);
-        newText = before + wrappedLines.join('\n') + after;
+        const lines = selected.split('\n').filter(l => l.trim());
+        const wrappedLines = lines.length > 0 ? lines.map(line => format + line).join('\n') : format;
+        newText = before + wrappedLines + (selected ? '' : '');
         newCursorPos = startPos + format.length;
     } else if (format.includes('[') && format.includes(']')) {
-        // Links: [selected](url) or [cursor](url)
+        const urlMatch = format.match(/\((.*?)\)/);
+        const url = urlMatch ? urlMatch[1] : '';
         if (selected) {
-            newText = before + '[' + selected + '](' + format.match(/\((.*?)\)/)[1] + ')' + after;
+            newText = before + '[' + selected + '](' + url + ')' + after;
         } else {
-            newText = before + '[' + 'link' + '](' + format.match(/\((.*?)\)/)[1] + ')' + after;
+            newText = before + '[link](' + url + ')' + after;
             newCursorPos = startPos + 1;
         }
     } else if (format.includes('```\n')) {
-        // Code blocks
         newText = before + format + '\n' + after;
         newCursorPos = startPos + format.length + 1;
     } else {
-        // Simple wrapping (bold, italic, lists)
-        newText = before + format + selected + format + after;
         if (selected) {
+            newText = before + format + selected + format + after;
             newCursorPos = startPos + format.length;
         } else {
-            newCursorPos = startPos + format.length;
-            // Insert cursor inside
             newText = before + format + format + after;
             newCursorPos = startPos + format.length;
         }
@@ -545,10 +591,14 @@ window.insertFormat = function(format) {
     editor.value = newText;
     editor.focus();
     
-    // Set cursor position
     if (newCursorPos !== undefined) {
-        editor.selectionStart = newCursorPos;
-        editor.selectionEnd = newCursorPos;
+        if (selected) {
+            editor.selectionStart = startPos + format.length;
+            editor.selectionEnd = startPos + format.length + selected.length;
+        } else {
+            editor.selectionStart = newCursorPos;
+            editor.selectionEnd = newCursorPos;
+        }
     }
     
     updatePreview();
@@ -557,7 +607,7 @@ window.insertFormat = function(format) {
 };
 
 // =============================================
-// STATISTICS CALCULATION
+// STATISTICS CALCULATION (WITH MD CLEAN MODE)
 // =============================================
 function updateStats() {
     const text = editor.value;
@@ -565,33 +615,28 @@ function updateStats() {
     let charCount, wordCount, paragraphCount;
     
     if (currentStatsMode === 'md-clean') {
-        // Remove markdown syntax for clean count
         const cleanText = text
-            .replace(/^(#{1,6}\s)/gm, '')           // Headers
-            .replace(/^\s*[-*+]\s+/gm, '')          // Unordered lists
-            .replace(/^\s*\d+\.\s+/gm, '')          // Ordered lists
-            .replace(/\*\*(.*?)\*\*/g, '$1')        // Bold
-            .replace(/\*(.*?)\*/g, '$1')            // Italic
-            .replace(/!\[.*?\]\(.*?\)/g, '')        // Images
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1')     // Links
-            .replace(/`(.*?)`/g, '$1')              // Inline code
-            .replace(/^>\s+/gm, '');                // Blockquotes
+            .replace(/^(#{1,6}\s)/gm, '')
+            .replace(/^\s*[-*+]\s+/gm, '')
+            .replace(/^\s*\d+\.\s+/gm, '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+            .replace(/`(.*?)`/g, '$1')
+            .replace(/^>\s+/gm, '');
         
         charCount = cleanText.length;
         const words = cleanText.trim().split(/\s+/).filter(w => w.length > 0);
         wordCount = cleanText.trim() === '' ? 0 : words.length;
-        
-        // Paragraphs - blocks separated by double newlines
         paragraphCount = cleanText.split(/\n\s*\n/).filter(p => p.trim().length > 0).length;
     } else {
-        // Raw count - all characters including markdown syntax
         charCount = text.length;
         const words = text.trim().split(/\s+/).filter(w => w.length > 0);
         wordCount = text.trim() === '' ? 0 : words.length;
         paragraphCount = text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length;
     }
     
-    // Update display with thousands separator
     if (charCountEl) charCountEl.textContent = charCount.toLocaleString();
     if (wordCountEl) wordCountEl.textContent = wordCount.toLocaleString();
     if (paraCountEl) paraCountEl.textContent = paragraphCount.toLocaleString();
