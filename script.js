@@ -44,7 +44,12 @@ const translations = {
         autoClose: 'Auto-Close',
         basic: 'Βασικά',
         advanced: 'Προχωρημένα',
-        closeTip: 'Κλείσιμο'
+        closeTip: 'Κλείσιμο',
+        shortcuts: 'Συντομεύσεις Πληκτρολογίου',
+        exitMode: 'Έξοδος Λειτουργίας',
+        fullGuide: 'Πλήρης Οδηγός Markdown',
+        commonmark: 'CommonMark Spec',
+        mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα μορφοποίησης κειμένου, που δημιουργήθηκε από τον John Gruber το 2004. Διαβάζει εύκολα και μπορεί να μετατραπεί σε HTML.'
     },
     en: {
         pageTitle: 'Minimalist Markdown Editor',
@@ -76,7 +81,12 @@ const translations = {
         autoClose: 'Auto-Close',
         basic: 'Basics',
         advanced: 'Advanced',
-        closeTip: 'Close'
+        closeTip: 'Close',
+        shortcuts: 'Keyboard Shortcuts',
+        exitMode: 'Exit Mode',
+        fullGuide: 'Full Markdown Guide',
+        commonmark: 'CommonMark Spec',
+        mdDesc: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor. It was created by John Gruber in 2004.'
     }
 };
 
@@ -515,16 +525,95 @@ function downloadFile(content, filename, mimeType) {
     document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
+// =============================================
+// CHEATSHEET POPULATION (ENHANCED WITH SHORTCUTS & REF)
+// =============================================
 function populateCheatsheet() {
     const container = document.getElementById('cheatsheet-body');
     if (!container) return;
+    
     const data = cheatsheetData[currentLanguage];
     const t = translations[currentLanguage];
-    let html = `<div class="cheatsheet-section"><h3>${t.basic}</h3>`;
-    data.basic.forEach(i => html += `<div class="cheatsheet-item"><h4>${i.title}</h4><p><small>${i.desc}</small></p><code>${i.example.replace(/\n/g, '<br>')}</code></div>`);
-    html += `</div><div class="cheatsheet-section"><h3>${t.advanced}</h3>`;
-    data.advanced.forEach(i => html += `<div class="cheatsheet-item"><h4>${i.title}</h4><p><small>${i.desc}</small></p><code>${i.example.replace(/\n/g, '<br>')}</code></div>`);
+    
+    let html = '';
+    
+    // 1. BASIC SECTION
+    html += `<div class="cheatsheet-section"><h3>${t.basic}</h3>`;
+    data.basic.forEach(item => {
+        html += `
+            <div class="cheatsheet-item">
+                <h4>${item.title}</h4>
+                <p><small>${item.desc}</small></p>
+                <code>${item.example.replace(/\n/g, '<br>')}</code>
+            </div>
+        `;
+    });
     html += `</div>`;
+    
+    // 2. SHORTCUTS TABLE
+    html += `
+        <div class="cheatsheet-section" id="shortcuts-section">
+            <h3>🔑 ${t.shortcuts}</h3>
+            <table class="shortcuts-table">
+                <tr>
+                    <td><code>Ctrl+B</code></td>
+                    <td><strong>${t.bold}</strong></td>
+                    <td>**text**</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+I</code></td>
+                    <td><strong>${t.italic}</strong></td>
+                    <td>*text*</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+H</code></td>
+                    <td><strong>Heading</strong></td>
+                    <td># Heading</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+K</code></td>
+                    <td><strong>${t.link}</strong></td>
+                    <td>[text](url)</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+L</code></td>
+                    <td><strong>${t.list}</strong></td>
+                    <td>- item</td>
+                </tr>
+                <tr>
+                    <td><code>ESC</code></td>
+                    <td><strong>${t.exitMode}</strong></td>
+                    <td>Focus / Preview</td>
+                </tr>
+            </table>
+        </div>
+    `;
+
+    // 3. ADVANCED SECTION
+    html += `<div class="cheatsheet-section"><h3>${t.advanced}</h3>`;
+    data.advanced.forEach(item => {
+        html += `
+            <div class="cheatsheet-item">
+                <h4>${item.title}</h4>
+                <p><small>${item.desc}</small></p>
+                <code>${item.example.replace(/\n/g, '<br>')}</code>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    
+    // 4. MARKDOWN REFERENCE FOOTER
+    html += `
+        <div class="markdown-ref-section">
+            <h3>ℹ️ ${currentLanguage === 'el' ? 'Γλώσσα Markdown' : 'Markdown Language'}</h3>
+            <p style="font-size:0.9rem; margin-bottom:0.5rem;">${t.mdDesc}</p>
+            <p>
+                <a href="https://www.markdownguide.org/" target="_blank" rel="noopener noreferrer">📖 ${t.fullGuide}</a> • 
+                <a href="https://commonmark.org/help/" target="_blank" rel="noopener noreferrer">⚙️ ${t.commonmark}</a>
+            </p>
+        </div>
+    `;
+    
     container.innerHTML = html;
 }
 
