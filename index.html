@@ -20,52 +20,51 @@
 <body class="theme-light">
     
     <!-- Language & Theme Toggle Bar -->
-<header class="top-bar">
-    <div class="left-section">
-        <button id="lang-toggle" class="icon-btn" title="Switch Language">EL/EN</button>
-        <button id="theme-toggle" class="icon-btn" title="Toggle Theme">☀️/🌙</button>
-        <!-- Focus Mode Toggle -->
-        <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
-        <!-- NEW: Clear All Content Button -->
-        <button id="clear-content-btn" class="icon-btn" title="Εκκαθάριση Περιεχομένου">🗑️</button>
-    </div>
-    
-    <!-- CENTERED TITLE -->
-    <h1 id="page-title">Μινιμαλιστικός επεξεργαστής Markdown</h1>
-    
-    <div class="right-section">
-        <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
-        <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
-        <button id="export-pdf" class="btn" data-lang-key="exportPDF">PDF</button>
-        <button id="cheatsheet-btn" class="icon-btn" title="Markdown Cheat Sheet">?</button>
-    </div>
-</header>
+    <header class="top-bar">
+        <div class="left-section">
+            <button id="lang-toggle" class="icon-btn" title="Switch Language">EL/EN</button>
+            <button id="theme-toggle" class="icon-btn" title="Toggle Theme">☀️/🌙</button>
+            <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
+            <button id="clear-content-btn" class="icon-btn" title="Εκκαθάριση Περιεχομένου">🗑️</button>
+            <!-- NEW: Open File Button -->
+            <button id="open-file-btn" class="icon-btn" title="Άνοιγμα Αρχείου">📂</button>
+            <input type="file" id="file-input" accept=".md,.txt,text/markdown,text/plain" style="display:none;">
+        </div>
+        
+        <h1 id="page-title">Μινιμαλιστικός επεξεργαστής Markdown</h1>
+        
+        <div class="right-section">
+            <!-- NEW: Export HTML Button -->
+            <button id="export-html" class="btn" title="Εξαγωγή ως HTML">HTML</button>
+            <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
+            <button id="export-txt" class="btn" data-lang-key="exportTXT">TXT</button>
+            <button id="export-pdf" class="btn" data-lang-key="exportPDF">PDF</button>
+            <button id="cheatsheet-btn" class="icon-btn" title="Markdown Cheat Sheet">?</button>
+        </div>
+    </header>
 
     <!-- Toolbar -->
     <div class="toolbar">
         <div class="mode-group">
             <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
-            <!-- NEW: Preview Mode Button added here -->
             <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
             <button id="mode-live" class="mode-btn" title="Live Preview (Inline)" data-lang-key="liveMode">👁️ Live</button>
             <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
         </div>
         
-        <!-- Stats Toggle Group (Now includes Auto-Close) -->
         <div class="stats-toggle-group">
             <label title="MD Clean: Αγνοεί syntax χαρακτήρες | Raw: Μετρά όλα τα χαρακτήρα" style="font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
                 <span data-lang-key="cleanStats">MD Clean</span>
             </label>
             
-            <!-- MOVED: Auto-Close Toggle here, next to MD Clean -->
             <label title="Αυτόματο κλείσιμο:" style="font-size:0.8rem; padding-left: 10px; border-left: 1px solid var(--border-color); margin-left: 5px; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="auto-close-toggle"> 
                 <span>Auto-Close</span>
             </label>
         </div>
 
-        <!-- Format Bar - PERMANENTLY VISIBLE -->
+        <!-- Format Bar -->
         <div class="format-bar" id="format-bar">
              <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
              <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
@@ -80,18 +79,16 @@
              <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
         </div>
         
-        <!-- Empty group or removed since Auto-Close moved -->
         <div class="export-group" style="flex-grow: 1;"></div>
     </div>
 
-    <!-- Random Tip Banner -->
+    <!-- Tip Banner -->
     <div id="tip-banner" class="tip-banner hidden">
         <span id="tip-text"></span>
     </div>
 
     <!-- Main Content Area -->
     <main class="main-container">
-        <!-- Edit Panel -->
         <div id="edit-panel" class="panel active">
             <textarea 
                 id="editor" 
@@ -101,18 +98,21 @@
             ></textarea>
         </div>
 
-        <!-- Preview Panel -->
         <div id="preview-panel" class="panel">
             <div id="preview-content" class="preview-wrapper"></div>
         </div>
 
-        <!-- Status Bar for Stats -->
+        <!-- Updated Stats Bar with Reading Time & Cursor -->
         <div id="stats-bar" class="stats-bar">
             <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
             <span>|</span>
             <span><strong><span id="word-count">0</span></strong> <span class="stat-label" data-lang-key="words">λέξεις</span></span>
             <span>|</span>
             <span><strong><span id="para-count">0</span></strong> <span class="stat-label" data-lang-key="paragraphs">παράγραφοι</span></span>
+            <span>|</span>
+            <span><strong>⏱️ <span id="reading-time">0</span> λεπτά</strong> <span class="stat-label">ανάγνωση</span></span>
+            <span>|</span>
+            <span><strong>📍 Γρ: <span id="cursor-line">1</span> | Στλ: <span id="cursor-col">1</span></strong></span>
         </div>
     </main>
 
@@ -142,18 +142,15 @@
                 <h2 data-lang-key="cheatSheetTitle">Cheat Sheet Markdown</h2>
                 <button id="close-cheatsheet" class="close-btn">&times;</button>
             </div>
-            <div id="cheatsheet-body" class="cheatsheet-body">
-                <!-- Will be populated by JS -->
-            </div>
+            <div id="cheatsheet-body" class="cheatsheet-body"></div>
         </div>
     </div>
 
-    <!-- Focus Mode Notification Toast -->
+    <!-- Focus Mode Toast -->
     <div id="focus-toast" class="focus-toast hidden">
         <span>ESC για επαναφορά σε πλήρη προβολή</span>
     </div>
 
-    <!-- Main Script -->
     <script src="script.js"></script>
 </body>
 </html>

@@ -11,82 +11,32 @@ let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = false;
+const WORDS_PER_MINUTE = 200;
 
-// Translations Object
 const translations = {
     el: {
         pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown',
-        editMode: 'Επεξεργασία',
-        previewMode: 'Προεπισκόπηση',
-        splitMode: 'Διπλό Panel',
-        liveMode: '👁️ Live',
-        focusMode: '⦿ Focus',
-        exportMD: 'MD',
-        exportTXT: 'TXT',
-        exportPDF: 'PDF',
-        cheatSheetTitle: 'Cheat Sheet Markdown',
-        heading1: 'Κεφαλίδα 1ου επιπέδου',
-        heading2: 'Κεφαλίδα 2ου επιπέδου',
-        heading3: 'Κεφαλίδα 3ου επιπέδου',
-        bold: 'Έντονο',
-        italic: 'Πλάγιο',
-        link: 'Σύνδεσμος',
-        image: 'Εικόνα',
-        list: 'Λίστα με κουκκίδες',
-        orderedList: 'Αριθμημένη λίστα',
-        codeBlock: 'Μπλοκ κώδικα',
-        quote: 'Παράθεση',
-        table: 'Πίνακας',
-        chars: 'χαρακτήρες',
-        words: 'λέξεις',
-        paragraphs: 'παράγραφοι',
-        cleanStats: 'MD Clean',
-        autoClose: 'Auto-Close',
-        basic: 'Βασικά',
-        advanced: 'Προχωρημένα',
-        closeTip: 'Κλείσιμο',
-        shortcuts: 'Συντομεύσεις Πληκτρολογίου',
-        exitMode: 'Έξοδος Λειτουργίας',
-        fullGuide: 'Πλήρης Οδηγός Markdown',
-        commonmark: 'CommonMark Spec',
-        mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα μορφοποίησης κειμένου, που δημιουργήθηκε από τον John Gruber το 2004. Διαβάζει εύκολα και μπορεί να μετατραπεί σε HTML.'
+        editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel',
+        liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
+        exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Άνοιγμα', cheatSheetTitle: 'Cheat Sheet Markdown',
+        chars: 'χαρακτήρες', words: 'λέξεις', paragraphs: 'παράγραφοι', readingTime: 'ανάγνωση',
+        cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Βασικά', advanced: 'Προχωρημένα',
+        closeTip: 'Κλείσιμο', shortcuts: 'Συντομεύσεις Πληκτρολογίου', exitMode: 'Έξοδος Λειτουργίας',
+        fullGuide: 'Πλήρης Οδηγός Markdown', commonmark: 'CommonMark Spec',
+        mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα μορφοποίησης κειμένου, που δημιουργήθηκε από τον John Gruber το 2004.',
+        bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα'
     },
     en: {
         pageTitle: 'Minimalist Markdown Editor',
-        editMode: 'Edit',
-        previewMode: 'Preview',
-        splitMode: 'Split View',
-        liveMode: '👁️ Live',
-        focusMode: '⦿ Focus',
-        exportMD: 'MD',
-        exportTXT: 'TXT',
-        exportPDF: 'PDF',
-        cheatSheetTitle: 'Markdown Cheat Sheet',
-        heading1: 'Heading Level 1',
-        heading2: 'Heading Level 2',
-        heading3: 'Heading Level 3',
-        bold: 'Bold',
-        italic: 'Italic',
-        link: 'Link',
-        image: 'Image',
-        list: 'Bullet List',
-        orderedList: 'Ordered List',
-        codeBlock: 'Code Block',
-        quote: 'Quote',
-        table: 'Table',
-        chars: 'characters',
-        words: 'words',
-        paragraphs: 'paragraphs',
-        cleanStats: 'MD Clean',
-        autoClose: 'Auto-Close',
-        basic: 'Basics',
-        advanced: 'Advanced',
-        closeTip: 'Close',
-        shortcuts: 'Keyboard Shortcuts',
-        exitMode: 'Exit Mode',
-        fullGuide: 'Full Markdown Guide',
-        commonmark: 'CommonMark Spec',
-        mdDesc: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor. It was created by John Gruber in 2004.'
+        editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View',
+        liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
+        exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Open', cheatSheetTitle: 'Markdown Cheat Sheet',
+        chars: 'characters', words: 'words', paragraphs: 'paragraphs', readingTime: 'reading time',
+        cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Basics', advanced: 'Advanced',
+        closeTip: 'Close', shortcuts: 'Keyboard Shortcuts', exitMode: 'Exit Mode',
+        fullGuide: 'Full Markdown Guide', commonmark: 'CommonMark Spec',
+        mdDesc: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor.',
+        bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List'
     }
 };
 
@@ -121,9 +71,7 @@ const tips = {
     ]
 };
 
-// =============================================
-// DOM ELEMENTS
-// =============================================
+// DOM Elements
 const editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
@@ -132,7 +80,7 @@ const formatBar = document.getElementById('format-bar');
 const tipBanner = document.getElementById('tip-banner');
 const tipText = document.getElementById('tip-text');
 const focusToast = document.getElementById('focus-toast');
-
+const fileInput = document.getElementById('file-input');
 const langToggle = document.getElementById('lang-toggle');
 const themeToggle = document.getElementById('theme-toggle');
 const modeEdit = document.getElementById('mode-edit');
@@ -143,24 +91,25 @@ const modeFocus = document.getElementById('mode-focus');
 const exportMd = document.getElementById('export-md');
 const exportTxt = document.getElementById('export-txt');
 const exportPdf = document.getElementById('export-pdf');
+const exportHtml = document.getElementById('export-html');
+const openFileBtn = document.getElementById('open-file-btn');
 const cheatsheetBtn = document.getElementById('cheatsheet-btn');
 const closeCheatsheet = document.getElementById('close-cheatsheet');
 const cheatsheetModal = document.getElementById('cheatsheet-modal');
 const mdStatsToggle = document.getElementById('md-stats-toggle');
 const autoCloseToggle = document.getElementById('auto-close-toggle');
-
 const charCountEl = document.getElementById('char-count');
 const wordCountEl = document.getElementById('word-count');
 const paraCountEl = document.getElementById('para-count');
+const readingTimeEl = document.getElementById('reading-time');
+const cursorLineEl = document.getElementById('cursor-line');
+const cursorColEl = document.getElementById('cursor-col');
 
 // =============================================
 // INITIALIZATION
 // =============================================
 function init() {
-    if (!editor || !pageTitle) {
-        console.error("Critical elements not found.");
-        return;
-    }
+    if (!editor || !pageTitle) { console.error("Critical elements not found."); return; }
 
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) editor.value = savedContent;
@@ -171,7 +120,6 @@ function init() {
     if (currentStatsMode === 'md-clean' && mdStatsToggle) mdStatsToggle.checked = true;
     else if (mdStatsToggle) mdStatsToggle.checked = false;
     
-    // Load Auto-Close state from localStorage
     const savedAutoClose = localStorage.getItem(AUTO_CLOSE_KEY);
     autoCloseEnabled = (savedAutoClose === 'true');
     if (autoCloseToggle) autoCloseToggle.checked = autoCloseEnabled;
@@ -180,6 +128,7 @@ function init() {
     setViewMode('split');
     updatePreview();
     updateStats();
+    updateCursorPosition();
     
     setupEventListeners();
 }
@@ -189,12 +138,7 @@ function init() {
 // =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
-    
-    const wasClosed = localStorage.getItem('tip-closed');
-    if (wasClosed === 'true') {
-        tipBanner.classList.add('hidden');
-        return;
-    }
+    if (localStorage.getItem('tip-closed') === 'true') { tipBanner.classList.add('hidden'); return; }
     
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
@@ -207,13 +151,9 @@ function showStickyTip() {
         btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px; font-size:0.9rem;';
         btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
         btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.backgroundColor = 'transparent'; };
-        btn.onclick = () => {
-            tipBanner.classList.add('hidden');
-            localStorage.setItem('tip-closed', 'true');
-        };
+        btn.onclick = () => { tipBanner.classList.add('hidden'); localStorage.setItem('tip-closed', 'true'); };
         tipBanner.appendChild(btn);
     }
-    
     tipBanner.classList.remove('hidden');
 }
 
@@ -222,7 +162,6 @@ function showStickyTip() {
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
-    
     const startPos = editor.selectionStart;
     const endPos = editor.selectionEnd;
     const text = editor.value;
@@ -236,7 +175,6 @@ window.insertFormat = function(format) {
         const lines = before.split('\n');
         const lastLine = lines[lines.length - 1];
         const hasListPrefix = /^\s*[-*]\s/.test(lastLine);
-        
         if (hasListPrefix) {
             newText = before + '\n- ' + selected + after;
             newCursorStart = startPos + 3;
@@ -284,24 +222,25 @@ window.insertFormat = function(format) {
     editor.selectionStart = newCursorStart;
     editor.selectionEnd = newCursorEnd;
     editor.focus();
-    
     updatePreview();
     updateStats();
+    updateCursorPosition();
     localStorage.setItem(STORAGE_KEY, editor.value);
 };
-
 // =============================================
 // EVENT LISTENERS
 // =============================================
 function setupEventListeners() {
-    // --- Editor Input ---
     editor.addEventListener('input', () => {
         localStorage.setItem(STORAGE_KEY, editor.value);
         updatePreview();
         updateStats();
+        updateCursorPosition();
     });
+    
+    editor.addEventListener('keyup', updateCursorPosition);
+    editor.addEventListener('click', updateCursorPosition);
 
-    // --- Toggles & Modes ---
     if (themeToggle) themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
     if (langToggle) langToggle.addEventListener('click', () => applyLanguage(currentLanguage === 'el' ? 'en' : 'el'));
     
@@ -321,7 +260,6 @@ function setupEventListeners() {
         updateStats();
     });
     
-    // --- AUTO-CLOSE TOGGLE ---
     if (autoCloseToggle) {
         autoCloseToggle.checked = autoCloseEnabled;
         autoCloseToggle.addEventListener('change', e => {
@@ -330,17 +268,18 @@ function setupEventListeners() {
         });
     }
 
-    // --- Export ---
-    if (exportMd) exportMd.addEventListener('click', () => downloadFile(editor.value, 'doc.md', 'text/markdown'));
-    if (exportTxt) exportTxt.addEventListener('click', () => downloadFile(editor.value, 'doc.txt', 'text/plain'));
+    if (exportMd) exportMd.addEventListener('click', () => downloadFile(editor.value, 'document.md', 'text/markdown'));
+    if (exportTxt) exportTxt.addEventListener('click', () => downloadFile(editor.value, 'document.txt', 'text/plain'));
     if (exportPdf) exportPdf.addEventListener('click', () => window.print());
+    if (exportHtml) exportHtml.addEventListener('click', exportAsHTML);
 
-    // --- Cheatsheet ---
+    if (openFileBtn) openFileBtn.addEventListener('click', () => { if (fileInput) fileInput.click(); });
+    if (fileInput) fileInput.addEventListener('change', handleFileOpen);
+
     if (cheatsheetBtn) cheatsheetBtn.addEventListener('click', () => { populateCheatsheet(); cheatsheetModal?.classList.remove('hidden'); });
     if (closeCheatsheet) closeCheatsheet.addEventListener('click', () => cheatsheetModal?.classList.add('hidden'));
     if (cheatsheetModal) cheatsheetModal.addEventListener('click', e => { if (e.target === cheatsheetModal) cheatsheetModal.classList.add('hidden'); });
 
-    // --- Live Mode Click-to-Edit ---
     if (preview?.parentElement) {
         preview.parentElement.addEventListener('click', e => {
             if (pageBody.classList.contains('live-mode') && !pageBody.classList.contains('live-editing') && !e.target.closest('.toolbar') && !e.target.closest('.top-bar')) {
@@ -352,7 +291,6 @@ function setupEventListeners() {
         });
     }
 
-    // --- CLEAR CONTENT BUTTON ---
     const clearBtn = document.getElementById('clear-content-btn');
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -361,12 +299,12 @@ function setupEventListeners() {
                 localStorage.setItem(STORAGE_KEY, '');
                 updatePreview();
                 updateStats();
+                updateCursorPosition();
                 editor.focus();
             }
         });
     }
 
-    // --- KEYBOARD SHORTCUTS ---
     document.addEventListener('keydown', e => {
         const isEditorActive = document.activeElement === editor;
         
@@ -397,34 +335,30 @@ function setupEventListeners() {
     });
 
     // ============================================
-    // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
+    // AUTO-CLOSE BRACKETS (FINAL FIX)
     // ============================================
     if (editor) {
         editor.addEventListener('keydown', function(e) {
             if (!autoCloseEnabled) return;
             
-            // Allow Shift for special chars (_, *) since they require it on some layouts
             const isSpecialChar = ['_', '*'].includes(e.key);
             if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
             if (typeof e.key !== 'string' || e.key.length !== 1) return;
             
-            const pairs = { 
-                '(': ')', 
-                '[': ']', 
-                '{': '}', 
-                '"': '"', 
-                "'": "'", 
-                '`': '`' 
-            };
+            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
             
             // Special case: asterisk -> **
             if (e.key === '*') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
+                // Insert the double asterisks
                 editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
-                // Place cursor BETWEEN the asterisks
+                
+                // CRITICAL: Force cursor to EXACTLY after the first asterisk
+                // We do this by setting selectionStart and End manually AFTER setRangeText
                 editor.selectionStart = editor.selectionEnd = pos + 1;
+                
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
@@ -434,9 +368,12 @@ function setupEventListeners() {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
+                // Insert double underscores
                 editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-                // Place cursor BETWEEN the underscores
+                
+                // CRITICAL: Force cursor to EXACTLY after the first underscore
                 editor.selectionStart = editor.selectionEnd = pos + 1;
+                
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
@@ -447,7 +384,6 @@ function setupEventListeners() {
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'end');
-                // Place cursor AFTER the opening character
                 editor.selectionStart = editor.selectionEnd = pos + 1;
                 editor.dispatchEvent(new Event('input'));
                 return;
@@ -457,8 +393,60 @@ function setupEventListeners() {
 }
 
 // =============================================
-// FOCUS MODE TOAST NOTIFICATION
+// NEW FEATURES IMPLEMENTATION
 // =============================================
+function exportAsHTML() {
+    const markdown = editor.value;
+    const htmlContent = marked.parse(markdown);
+    const fullHTML = `<!DOCTYPE html>
+<html lang="${currentLanguage}">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown Document</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
+        blockquote { border-left: 4px solid #2196F3; padding-left: 1rem; color: #666; }
+        img { max-width: 100%; height: auto; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+        th { background: #f4f4f4; }
+    </style>
+</head>
+<body>${htmlContent}</body></html>`;
+    downloadFile(fullHTML, 'document.html', 'text/html');
+}
+
+function handleFileOpen(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        editor.value = event.target.result;
+        localStorage.setItem(STORAGE_KEY, editor.value);
+        updatePreview();
+        updateStats();
+        updateCursorPosition();
+        fileInput.value = '';
+    };
+    reader.onerror = () => alert('Σφάλμα κατά την ανάγνωση του αρχείου!');
+    reader.readAsText(file);
+}
+
+function updateCursorPosition() {
+    if (!editor) return;
+    const text = editor.value;
+    const pos = editor.selectionStart;
+    const textUpToCursor = text.substring(0, pos);
+    const lines = textUpToCursor.split('\n');
+    const currentLine = lines.length;
+    const currentColumn = lines[lines.length - 1].length + 1;
+    if (cursorLineEl) cursorLineEl.textContent = currentLine;
+    if (cursorColEl) cursorColEl.textContent = currentColumn;
+}
+
 function showFocusToast() {
     if (!focusToast) return;
     focusToast.classList.remove('hidden');
@@ -470,13 +458,10 @@ function showFocusToast() {
     }, 2000);
 }
 
-// =============================================
-// HELPERS
-// =============================================
-function applyTheme(theme) { 
-    document.documentElement.setAttribute('data-theme', theme); 
-    currentTheme = theme; 
-    localStorage.setItem(THEME_KEY, theme); 
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    currentTheme = theme;
+    localStorage.setItem(THEME_KEY, theme);
 }
 
 function applyLanguage(lang) {
@@ -484,13 +469,13 @@ function applyLanguage(lang) {
     localStorage.setItem(LANGUAGE_KEY, lang);
     document.documentElement.lang = lang;
     if (pageTitle) pageTitle.textContent = translations[lang].pageTitle;
-    document.querySelectorAll('[data-lang-key]').forEach(btn => { 
-        const key = btn.getAttribute('data-lang-key'); 
-        if (translations[lang][key]) btn.textContent = translations[lang][key]; 
+    document.querySelectorAll('[data-lang-key]').forEach(btn => {
+        const key = btn.getAttribute('data-lang-key');
+        if (translations[lang][key]) btn.textContent = translations[lang][key];
     });
-    document.querySelectorAll('.stat-label').forEach((label, idx) => { 
-        const keys = ['chars', 'words', 'paragraphs']; 
-        if (keys[idx]) label.textContent = translations[lang][keys[idx]]; 
+    document.querySelectorAll('.stat-label').forEach((label, idx) => {
+        const keys = ['chars', 'words', 'paragraphs'];
+        if (keys[idx]) label.textContent = translations[lang][keys[idx]];
     });
     if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) populateCheatsheet();
     const closeTip = document.querySelector('.close-tip-btn');
@@ -508,14 +493,8 @@ function setViewMode(mode) {
     }
 }
 
-function toggleFocusMode() { 
-    pageBody.classList.toggle('focus-mode'); 
-    modeFocus?.classList.toggle('active'); 
-}
-
-function updatePreview() { 
-    preview.innerHTML = typeof marked !== 'undefined' ? marked.parse(editor.value) : '<p style="color:red">Error</p>'; 
-}
+function toggleFocusMode() { pageBody.classList.toggle('focus-mode'); modeFocus?.classList.toggle('active'); }
+function updatePreview() { preview.innerHTML = typeof marked !== 'undefined' ? marked.parse(editor.value) : '<p style="color:red">Error</p>'; }
 
 function downloadFile(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType });
@@ -526,158 +505,58 @@ function downloadFile(content, filename, mimeType) {
 }
 
 // =============================================
-// CHEATSHEET POPULATION (ENHANCED WITH SHORTCUTS & REF)
+// CHEATSHEET POPULATION
 // =============================================
 function populateCheatsheet() {
     const container = document.getElementById('cheatsheet-body');
     if (!container) return;
-    
     const data = cheatsheetData[currentLanguage];
     const t = translations[currentLanguage];
     
-    let html = '';
-    
-    // 1. BASIC SECTION
-    html += `<div class="cheatsheet-section"><h3>${t.basic}</h3>`;
+    let html = `<div class="cheatsheet-section"><h3>${t.basic}</h3>`;
     data.basic.forEach(item => {
-        html += `
-            <div class="cheatsheet-item">
-                <h4>${item.title}</h4>
-                <p><small>${item.desc}</small></p>
-                <code>${item.example.replace(/\n/g, '<br>')}</code>
-            </div>
-        `;
+        html += `<div class="cheatsheet-item"><h4>${item.title}</h4><p><small>${item.desc}</small></p><code>${item.example.replace(/\n/g, '<br>')}</code></div>`;
     });
     html += `</div>`;
     
-    // 2. SHORTCUTS TABLE
-    html += `
-        <div class="cheatsheet-section" id="shortcuts-section">
-            <h3>🔑 ${t.shortcuts}</h3>
-            <table class="shortcuts-table">
-                <tr>
-                    <td><code>Ctrl+B</code></td>
-                    <td><strong>${t.bold}</strong></td>
-                    <td>**text**</td>
-                </tr>
-                <tr>
-                    <td><code>Ctrl+I</code></td>
-                    <td><strong>${t.italic}</strong></td>
-                    <td>*text*</td>
-                </tr>
-                <tr>
-                    <td><code>Ctrl+H</code></td>
-                    <td><strong>Heading</strong></td>
-                    <td># Heading</td>
-                </tr>
-                <tr>
-                    <td><code>Ctrl+K</code></td>
-                    <td><strong>${t.link}</strong></td>
-                    <td>[text](url)</td>
-                </tr>
-                <tr>
-                    <td><code>Ctrl+L</code></td>
-                    <td><strong>${t.list}</strong></td>
-                    <td>- item</td>
-                </tr>
-                <tr>
-                    <td><code>ESC</code></td>
-                    <td><strong>${t.exitMode}</strong></td>
-                    <td>Focus / Preview</td>
-                </tr>
-            </table>
-        </div>
-    `;
-
-    // 3. ADVANCED SECTION
+    html += `<div class="cheatsheet-section" id="shortcuts-section"><h3>🔑 ${t.shortcuts}</h3><table class="shortcuts-table">`;
+    html += `<tr><td><code>Ctrl+B</code></td><td><strong>${t.bold}</strong></td><td>**text**</td></tr>`;
+    html += `<tr><td><code>Ctrl+I</code></td><td><strong>${t.italic}</strong></td><td>*text*</td></tr>`;
+    html += `<tr><td><code>Ctrl+H</code></td><td><strong>Heading</strong></td><td># Heading</td></tr>`;
+    html += `<tr><td><code>Ctrl+K</code></td><td><strong>${t.link}</strong></td><td>[text](url)</td></tr>`;
+    html += `<tr><td><code>Ctrl+L</code></td><td><strong>${t.list}</strong></td><td>- item</td></tr>`;
+    html += `<tr><td><code>ESC</code></td><td><strong>${t.exitMode}</strong></td><td>Focus / Preview</td></tr>`;
+    html += `</table></div>`;
+    
     html += `<div class="cheatsheet-section"><h3>${t.advanced}</h3>`;
     data.advanced.forEach(item => {
-        html += `
-            <div class="cheatsheet-item">
-                <h4>${item.title}</h4>
-                <p><small>${item.desc}</small></p>
-                <code>${item.example.replace(/\n/g, '<br>')}</code>
-            </div>
-        `;
+        html += `<div class="cheatsheet-item"><h4>${item.title}</h4><p><small>${item.desc}</small></p><code>${item.example.replace(/\n/g, '<br>')}</code></div>`;
     });
     html += `</div>`;
     
-    // 4. MARKDOWN REFERENCE FOOTER
-    html += `
-        <div class="markdown-ref-section">
-            <h3>ℹ️ ${currentLanguage === 'el' ? 'Γλώσσα Markdown' : 'Markdown Language'}</h3>
-            <p style="font-size:0.9rem; margin-bottom:0.5rem;">${t.mdDesc}</p>
-            <p>
-                <a href="https://www.markdownguide.org/" target="_blank" rel="noopener noreferrer">📖 ${t.fullGuide}</a> • 
-                <a href="https://commonmark.org/help/" target="_blank" rel="noopener noreferrer">⚙️ ${t.commonmark}</a>
-            </p>
-        </div>
-    `;
+    html += `<div class="markdown-ref-section"><h3>ℹ️ ${currentLanguage === 'el' ? 'Γλώσσα Markdown' : 'Markdown Language'}</h3>`;
+    html += `<p style="font-size:0.9rem; margin-bottom:0.5rem;">${t.mdDesc}</p>`;
+    html += `<p><a href="https://www.markdownguide.org/" target="_blank" rel="noopener noreferrer">📖 ${t.fullGuide}</a> • <a href="https://commonmark.org/help/" target="_blank" rel="noopener noreferrer">⚙️ ${t.commonmark}</a></p></div>`;
     
     container.innerHTML = html;
 }
 
 const cheatsheetData = {
     el: {
-        basic: [
-            { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' },
-            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' },
-            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
-            { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },
-            { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' },
-            { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' },
-            { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' },
-            { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }
-        ],
-        advanced: [
-            { title: 'Code Block', example: '```\ncode\n```', desc: 'Τρία backticks' },
-            { title: 'Inline Code', example: '`code`', desc: 'Ένα backtick' },
-            { title: 'Blockquote', example: '> Παράθεση', desc: 'Προσθήκη >' },
-            { title: 'Εικόνα', example: '![Alt](url)', desc: 'Όμοιο με σύνδεσμο + !' },
-            { title: 'Πίνακας', example: '| A | B |', desc: 'Χρήση |' },
-            { title: 'Διαχωριστική', example: '---', desc: 'Τρεις παύλες' },
-            { title: 'Υπογράμμιση', example: '<u>Text</u>', desc: 'HTML tag' },
-            { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }
-        ]
+        basic: [{ title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' }, { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' }, { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' }, { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' }, { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' }, { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' }, { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' }, { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }],
+        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Τρία backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Ένα backtick' }, { title: 'Blockquote', example: '> Παράθεση', desc: 'Προσθήκη >' }, { title: 'Εικόνα', example: '![Alt](url)', desc: 'Όμοιο με σύνδεσμο + !' }, { title: 'Πίνακας', example: '| A | B |', desc: 'Χρήση |' }, { title: 'Διαχωριστική', example: '---', desc: 'Τρεις παύλες' }, { title: 'Υπογράμμιση', example: '<u>Text</u>', desc: 'HTML tag' }, { title: 'Νέα Παράγραφος', example: '\\n\\n', desc: 'Δύο κενές γραμμές' }]
     },
     en: {
-        basic: [
-            { title: 'Heading 1', example: '# Heading', desc: 'One #' },
-            { title: 'Heading 2', example: '## Heading', desc: 'Two ##' },
-            { title: 'Heading 3', example: '### Heading', desc: 'Three ###' },
-            { title: 'Bold', example: '**text**', desc: 'Double asterisks' },
-            { title: 'Italic', example: '*text*', desc: 'Single asterisk' },
-            { title: 'Link', example: '[Title](url)', desc: '[Text](URL)' },
-            { title: 'List', example: '- Item', desc: 'Starts with -' },
-            { title: 'Ordered', example: '1. Item', desc: 'Starts with number.' }
-        ],
-        advanced: [
-            { title: 'Code Block', example: '```\ncode\n```', desc: 'Triple backticks' },
-            { title: 'Inline Code', example: '`code`', desc: 'Single backtick' },
-            { title: 'Blockquote', example: '> Quote', desc: 'Add >' },
-            { title: 'Image', example: '![Alt](url)', desc: 'Like link with !' },
-            { title: 'Table', example: '| A | B |', desc: 'Use |' },
-            { title: 'HR', example: '---', desc: 'Three dashes' },
-            { title: 'Underline', example: '<u>Text</u>', desc: 'HTML tag' },
-            { title: 'New Para', example: '\\n\\n', desc: 'Two empty lines' }
-        ]
+        basic: [{ title: 'Heading 1', example: '# Heading', desc: 'One #' }, { title: 'Heading 2', example: '## Heading', desc: 'Two ##' }, { title: 'Heading 3', example: '### Heading', desc: 'Three ###' }, { title: 'Bold', example: '**text**', desc: 'Double asterisks' }, { title: 'Italic', example: '*text*', desc: 'Single asterisk' }, { title: 'Link', example: '[Title](url)', desc: '[Text](URL)' }, { title: 'List', example: '- Item', desc: 'Starts with -' }, { title: 'Ordered', example: '1. Item', desc: 'Starts with number.' }],
+        advanced: [{ title: 'Code Block', example: '```\ncode\n```', desc: 'Triple backticks' }, { title: 'Inline Code', example: '`code`', desc: 'Single backtick' }, { title: 'Blockquote', example: '> Quote', desc: 'Add >' }, { title: 'Image', example: '![Alt](url)', desc: 'Like link with !' }, { title: 'Table', example: '| A | B |', desc: 'Use |' }, { title: 'HR', example: '---', desc: 'Three dashes' }, { title: 'Underline', example: '<u>Text</u>', desc: 'HTML tag' }, { title: 'New Para', example: '\\n\\n', desc: 'Two empty lines' }]
     }
 };
 
 function updateStats() {
     const text = editor.value;
-    let c, w, p;
+    let c, w, p, readingMins;
     if (currentStatsMode === 'md-clean') {
-        const clean = text
-            .replace(/^(#{1,6}\s)/gm, '')
-            .replace(/^\s*[-*+]\s+/gm, '')
-            .replace(/^\s*\d+\.\s+/gm, '')
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/\*(.*?)\*/g, '$1')
-            .replace(/!\[.*?\]\(.*?\)/g, '')
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/`(.*?)`/g, '$1')
-            .replace(/^>\s+/gm, '');
+        const clean = text.replace(/^(#{1,6}\s)|^\s*[-*+]\s|^\s*\d+\.\s|\*\*(.*?)\*\*|\*(.*?)\*|!\[.*?\]\(.*?\)|\[.*?\]\(.*?\)|`(.*?)`|^>\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
         c = clean.length;
         w = clean.trim() === '' ? 0 : clean.trim().split(/\s+/).filter(x => x).length;
         p = clean.split(/\n\s*\n/).filter(x => x.trim()).length;
@@ -686,13 +565,12 @@ function updateStats() {
         w = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(x => x).length;
         p = text.split(/\n\s*\n/).filter(x => x.trim()).length;
     }
+    readingMins = Math.ceil(w / WORDS_PER_MINUTE) || 0;
     if (charCountEl) charCountEl.textContent = c.toLocaleString();
     if (wordCountEl) wordCountEl.textContent = w.toLocaleString();
     if (paraCountEl) paraCountEl.textContent = p.toLocaleString();
+    if (readingTimeEl) readingTimeEl.textContent = readingMins;
 }
 
-// =============================================
-// START
-// =============================================
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();

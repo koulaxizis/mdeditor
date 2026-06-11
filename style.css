@@ -875,3 +875,23 @@ body.focus-mode.live-mode #preview-panel {
         gap: 0.5rem;
     }
 }
+
+/* Status Bar Enhancements */
+.stats-bar span strong { color: var(--accent-color); font-weight: 600; }
+.stats-bar .stat-label { color: var(--text-secondary); font-size: 0.8rem; margin-left: 2px; }
+
+/* Shortcuts Table */
+#shortcuts-section { margin-top: 2rem; padding-bottom: 1.5rem; border-bottom: 1px dashed var(--border-color); }
+#shortcuts-section h3 { color: var(--accent-color); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+.shortcuts-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.shortcuts-table tr { border-bottom: 1px solid var(--border-color); }
+.shortcuts-table tr:last-child { border-bottom: none; }
+.shortcuts-table td { padding: 0.6rem 0.5rem; vertical-align: middle; }
+.shortcuts-table code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace; font-weight: 600; color: var(--accent-color); white-space: nowrap; }
+
+/* Markdown Reference */
+.markdown-ref-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed var(--accent-color); color: var(--text-secondary); font-size: 0.85rem; }
+.markdown-ref-section h3 { color: var(--text-primary); font-size: 1rem; margin-bottom: 0.5rem; }
+.markdown-ref-section p { line-height: 1.5; margin: 0.5rem 0; }
+.markdown-ref-section a { color: var(--accent-color); text-decoration: none; font-weight: 500; transition: opacity 0.2s; }
+.markdown-ref-section a:hover { text-decoration: underline; opacity: 0.8; }
