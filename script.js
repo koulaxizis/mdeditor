@@ -8,7 +8,7 @@ const STATS_KEY = 'lumo-editor-stats-mode';
 const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 const WRAP_KEY = 'lumo-editor-word-wrap';
 
-const APP_VERSION = "1.0.7";
+const APP_VERSION = "1.0.8";
 const LAST_UPDATE_DATE = "11/06/2026";
 
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
@@ -93,7 +93,7 @@ const tips = {
     ]
 };
 
-// DOM Elements (Safe Selection)
+// DOM Elements
 const editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
@@ -207,11 +207,10 @@ function showStickyTip() {
 }
 
 // =============================================
-// GLOBAL FORMAT FUNCTION (FIXED)
+// GLOBAL FORMAT FUNCTION
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
-    e.preventDefault ? null : null; // Safe guard
     
     const startPos = editor.selectionStart;
     const endPos = editor.selectionEnd;
@@ -236,15 +235,13 @@ window.insertFormat = function(format) {
             newCursorEnd = newCursorStart + selected.length;
         }
     } else if (format === '1. ') {
+        // FIXED: Auto-increment logic now works even if there is text after the number
         const lines = before.split('\n');
         const lastLine = lines[lines.length - 1];
-        const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
-        let nextNum = 1;
-        if (numMatch) {
-            nextNum = parseInt(numMatch[1]) + 1;
-        }
-        newText = before + `\n${nextNum}. ` + selected + after;
-        newCursorStart = startPos + 3;
+        // Regex: Matches any line ending with "number. " optionally followed by more text
+        // But we only trigger on Enter key in handleEditorKeydown. Here we just insert "1. "
+        newText = before + format + selected + after;
+        newCursorStart = startPos + 2;
         newCursorEnd = newCursorStart + selected.length;
     } else if (format.includes('# ') && !format.includes('[')) {
         const lines = selected.trim().split('\n').filter(l => l.trim());
@@ -291,7 +288,7 @@ window.insertFormat = function(format) {
 };
 
 // =============================================
-// KEYBOARD EVENT HANDLER (NUMBERED LIST LOGIC)
+// KEYBOARD EVENT HANDLER (FIXED NUMBERING LOGIC)
 // =============================================
 function handleEditorKeydown(e) {
     if (e.key === 'Enter') {
@@ -300,21 +297,45 @@ function handleEditorKeydown(e) {
         const lines = textUpToCursor.split('\n');
         const lastLine = lines[lines.length - 1];
         
-        const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
+        // CHECK: Does the line end with "number. " possibly followed by spaces, but NO other text?
+        // Actually, user said: "if character follows number and period, it stops working".
+        // The previous regex was /^\s*(\d+)\.\s*$/. This requires END of string ($).
+        // If user typed "1. Hello" and pressed Enter, we want "2. ".
+        // So we check if the line STARTS with "number. " and ends with spaces or nothing.
+        // Wait, if I type "1. Hello", then hit Enter, I expect "2. ".
+        // The regex /^(\s*)(\d+)\.\s+(.*)$/ would capture everything.
+        // We only want to auto-increment if the line is effectively a list item.
+        
+        // Let's try: /^(\s*)(\d+)\.\s*$/.exec(lastLine) -> matches "1. ", "  1.  "
+        // If user types "1. Some text", this does NOT match $.
+        // BUT if user types "1. " and hits Enter, it matches.
+        // If user types "1. Text" and hits Enter, should it become "2. "? Usually yes in editors.
+        // Let's change regex to allow text after, but ensure it starts with the pattern.
+        // Actually, standard behavior: "1. Text" + Enter -> "2. ".
+        // Regex: /^(\s*)(\d+)\.\s/.exec(lastLine) -> captures "1. " anywhere at start.
+        // If it matches, we increment.
+        
+        const numMatch = /^(\s*)(\d+)\.\s/.exec(lastLine);
+        
         if (numMatch) {
             e.preventDefault();
-            const nextNum = parseInt(numMatch[1]) + 1;
-            const insertText = `\n${nextNum}. `;
+            const nextNum = parseInt(numMatch[2]) + 1;
+            // Preserve indentation from first group
+            const indent = numMatch[1] || '';
+            const insertText = `\n${indent}${nextNum}. `;
+            
             editor.setRangeText(insertText, pos, pos, 'end');
             editor.selectionStart = editor.selectionEnd = pos + insertText.length;
             editor.dispatchEvent(new Event('input'));
             return;
         }
         
-        const bulletMatch = /^\s*[-*]\s*$/.exec(lastLine);
+        // Bullet list logic
+        const bulletMatch = /^(\s*)[-*]\s/.exec(lastLine);
         if (bulletMatch) {
             e.preventDefault();
-            const insertText = '\n- ';
+            const indent = bulletMatch[1] || '';
+            const insertText = `\n${indent}- `;
             editor.setRangeText(insertText, pos, pos, 'end');
             editor.selectionStart = editor.selectionEnd = pos + insertText.length;
             editor.dispatchEvent(new Event('input'));
@@ -324,7 +345,7 @@ function handleEditorKeydown(e) {
 }
 
 // =============================================
-// VIEW MODE MANAGEMENT
+// VIEW MODE MANAGEMENT (FIXED: Stats ALWAYS Visible)
 // =============================================
 function setViewMode(mode) {
     currentViewMode = mode;
@@ -336,28 +357,28 @@ function setViewMode(mode) {
         case 'edit': 
             pageBody.classList.add('edit-only'); 
             if(modeEdit) modeEdit.classList.add('active');
-            if(statsBar) statsBar.style.display = 'flex';
             break;
         case 'live': 
             pageBody.classList.add('live-mode'); 
             if(modeLive) modeLive.classList.add('active');
-            if(statsBar) statsBar.style.display = 'flex';
             break;
         case 'preview': 
             pageBody.classList.add('preview-only', 'read-only'); 
             if(modePreview) modePreview.classList.add('active');
-            if(statsBar) statsBar.style.display = 'none';
+            // Removed: statsBar.style.display = 'none';
             break;
         default: // split
             pageBody.classList.add('split-mode'); 
             if(modeSplit) modeSplit.classList.add('active');
-            if(statsBar) statsBar.style.display = 'flex';
             break;
     }
+    
+    // FORCE STATS TO BE VISIBLE IN ALL MODES
+    if(statsBar) statsBar.style.display = 'flex';
 }
 
 // =============================================
-// EVENT LISTENERS (CRITICAL FIX: All added here)
+// EVENT LISTENERS
 // =============================================
 function setupEventListeners() {
     if (!editor) return;
@@ -477,12 +498,9 @@ function setupEventListeners() {
         }
     });
 
-    // ============================================
-    // CUSTOM CONTEXT MENU
-    // ============================================
+    // Context Menu
     editor.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        
         const t = translations[currentLanguage];
         const menuHTML = `
             <div class="custom-context-menu" style="position:fixed; top:${e.clientY}px; left:${e.clientX}px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.2); min-width:180px; z-index:9999; overflow:hidden;">
@@ -498,14 +516,11 @@ function setupEventListeners() {
                 <div class="ctx-item" onclick="execCmd('paste')"><span>📋</span> ${t.ctxPaste}</div>
             </div>
         `;
-        
         const existingMenu = document.querySelector('.custom-context-menu');
         if (existingMenu) existingMenu.remove();
-        
         const menu = document.createElement('div');
         menu.innerHTML = menuHTML;
         document.body.appendChild(menu);
-        
         const closeMenu = () => {
             if (document.querySelector('.custom-context-menu')) {
                 document.querySelector('.custom-context-menu').remove();
@@ -515,19 +530,14 @@ function setupEventListeners() {
         setTimeout(() => document.addEventListener('click', closeMenu), 10);
     });
 
-    // ============================================
-    // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
-    // ============================================
+    // Auto-Close Brackets
     if (editor) {
         editor.addEventListener('keydown', function(e) {
             if (!autoCloseEnabled) return;
-            
             const isSpecialChar = ['_', '*'].includes(e.key);
             if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
             if (typeof e.key !== 'string' || e.key.length !== 1) return;
-            
             const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
-            
             if (e.key === '*') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
@@ -537,7 +547,6 @@ function setupEventListeners() {
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
-            
             if (e.key === '_') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
@@ -547,7 +556,6 @@ function setupEventListeners() {
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
-            
             if (pairs[e.key]) {
                 e.preventDefault();
                 const pos = editor.selectionStart;
@@ -562,46 +570,8 @@ function setupEventListeners() {
 }
 
 // =============================================
-// HELPER FUNCTIONS
+// HELPER FUNCTIONS (CONCLUSION)
 // =============================================
-function copyAsHTML() {
-    const htmlContent = marked.parse(editor.value);
-    navigator.clipboard.writeText(htmlContent).then(() => {
-        showToast(translations[currentLanguage].toastCopied, 'success');
-    }).catch(err => {
-        showToast(translations[currentLanguage].toastError, 'error');
-    });
-}
-
-function execCmd(cmd) {
-    document.execCommand(cmd);
-}
-
-function exportAsHTML() {
-    const markdown = editor.value;
-    const htmlContent = marked.parse(markdown);
-    const fullHTML = `<!DOCTYPE html>
-<html lang="${currentLanguage}">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exported Markdown Document</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-        h1 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-        pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; }
-        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
-        blockquote { border-left: 4px solid #3B82F6; padding-left: 1rem; color: #666; }
-        img { max-width: 100%; height: auto; border-radius: 4px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
-        th { background: #f4f4f4; }
-        s, del { text-decoration: line-through; }
-    </style>
-</head>
-<body>${htmlContent}</body></html>`;
-    downloadFile(fullHTML, 'document.html', 'text/html');
-}
-
 function handleFileOpen(e) {
     const file = e.target.files[0];
     if (!file) return;
