@@ -27,8 +27,10 @@
             <!-- Focus Mode Toggle -->
             <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
         </div>
+        
         <!-- CENTERED TITLE -->
         <h1 id="page-title">Μινιμαλιστικός επεξεργαστής Markdown</h1>
+        
         <div class="right-section">
             <!-- Export buttons moved here (left of cheatsheet) -->
             <button id="export-md" class="btn" data-lang-key="exportMD">MD</button>
@@ -54,7 +56,7 @@
             </label>
         </div>
 
-        <!-- Format Bar - NOW PERMANENTLY VISIBLE -->
+        <!-- Format Bar - PERMANENTLY VISIBLE -->
         <div class="format-bar" id="format-bar">
              <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
              <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
@@ -70,10 +72,10 @@
         </div>
         
         <div class="export-group">
-            <!-- Auto-Close Toggle ONLY here now -->
-            <label title="Αυτόματο κλείσιμο παρενθέσεων και markdown symbols" style="font-size:0.7rem; margin-left:10px; padding:0 10px; border-left:1px solid var(--border-color); display:flex; align-items:center; gap:5px;">
+            <!-- Auto-Close Toggle HERE -->
+            <label title="Αυτόματο κλείσιμο:" style="font-size:0.8rem; padding:0 5px; border-left:1px solid var(--border-color); display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="auto-close-toggle"> 
-                <span data-lang-key="autoClose">Auto-Close</span>
+                <span>Auto-Close</span>
             </label>
         </div>
     </div>
