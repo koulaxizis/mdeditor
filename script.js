@@ -41,7 +41,10 @@ const translations = {
         words: 'λέξεις',
         paragraphs: 'παράγραφοι',
         cleanStats: 'MD Clean',
-        autoClose: 'Auto-Close'
+        autoClose: 'Auto-Close',
+        basic: 'Βασικά',
+        advanced: 'Προχωρημένα',
+        closeTip: 'Κλείσιμο'
     },
     en: {
         pageTitle: 'Markdown Editor',
@@ -70,11 +73,14 @@ const translations = {
         words: 'words',
         paragraphs: 'paragraphs',
         cleanStats: 'MD Clean',
-        autoClose: 'Auto-Close'
+        autoClose: 'Auto-Close',
+        basic: 'Basics',
+        advanced: 'Advanced',
+        closeTip: 'Close'
     }
 };
 
-// Tips
+// Tips - Now sticky with close button
 const tips = {
     el: [
         '💡 Χρησιμοποίησε `#` για τίτλους (# H1, ## H2, ### H3)',
@@ -87,7 +93,8 @@ const tips = {
         '💡 Η τοπική αποθήκευση διατηρεί τα κείμενά σου',
         '💡 Active Focus Mode με το κουμπί ⦿',
         '💡 Activate MD Clean Stats για καθαρή καταμέτρηση λέξεων',
-        '💡 Στο Live mode πάτα κλικ στο κείμενο για να γράψεις'
+        '💡 Στο Live mode πάτα κλικ στο κείμενο για να γράψεις',
+        '💡 Χρησιμοποίησε Ctrl+B για Bold, Ctrl+I για Italic'
     ],
     en: [
         '💡 Use `#` for headings (# H1, ## H2, ### H3)',
@@ -100,7 +107,8 @@ const tips = {
         '💡 Local storage keeps your texts safe',
         '💡 Activate Focus Mode with ⦿ button',
         '💡 Activate MD Clean Stats for word count without syntax',
-        '💡 In Live mode click text to edit'
+        '💡 In Live mode click text to edit',
+        '💡 Use Ctrl+B for Bold, Ctrl+I for Italic'
     ]
 };
 
@@ -113,6 +121,9 @@ const pageBody = document.body;
 const pageTitle = document.getElementById('page-title');
 const formatBar = document.getElementById('format-bar');
 const editorPanel = document.getElementById('edit-panel');
+const tipBanner = document.getElementById('tip-banner');
+const tipText = document.getElementById('tip-text');
+const closeTipBtn = document.createElement('span'); // Create close button dynamically
 
 // Buttons & Controls
 const langToggle = document.getElementById('lang-toggle');
@@ -128,8 +139,6 @@ const exportPdf = document.getElementById('export-pdf');
 const cheatsheetBtn = document.getElementById('cheatsheet-btn');
 const closeCheatsheet = document.getElementById('close-cheatsheet');
 const cheatsheetModal = document.getElementById('cheatsheet-modal');
-const tipBanner = document.getElementById('tip-banner');
-const tipText = document.getElementById('tip-text');
 const mdStatsToggle = document.getElementById('md-stats-toggle');
 const autoCloseToggle = document.getElementById('auto-close-toggle');
 
@@ -172,8 +181,8 @@ function init() {
         if (autoCloseToggle) autoCloseToggle.checked = true;
     }
     
-    // Set random tip
-    showRandomTip();
+    // Set random tip (STICKY)
+    showStickyTip();
     
     // Initial render and stats
     updatePreview();
@@ -181,10 +190,42 @@ function init() {
     
     // Setup event listeners (ONLY ONCE!)
     setupEventListeners();
+    
+    // FIX: Initialize to SPLIT MODE correctly
+    setViewMode('split');
 }
 
 // =============================================
-// GLOBAL FORMAT FUNCTION (MUST BE AVAILABLE EARLY)
+// STICKY TIP DISPLAY
+// =============================================
+function showStickyTip() {
+    if (!tipBanner || !tipText) return;
+    
+    const tipsForLang = tips[currentLanguage];
+    const randomIndex = Math.floor(Math.random() * tipsForLang.length);
+    tipText.textContent = tipsForLang[randomIndex];
+    
+    // Add close button
+    if (tipBanner.children.length < 3) { // Avoid duplicate if called multiple times
+        closeTipBtn.textContent = '✕';
+        closeTipBtn.className = 'close-tip-btn';
+        closeTipBtn.title = translations[currentLanguage].closeTip || 'Close';
+        closeTipBtn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; font-size:1rem; opacity:0.8; transition:opacity 0.2s;';
+        closeTipBtn.onmouseover = () => closeTipBtn.style.opacity = '1';
+        closeTipBtn.onmouseout = () => closeTipBtn.style.opacity = '0.8';
+        
+        closeTipBtn.onclick = () => {
+            tipBanner.classList.add('hidden');
+        };
+        
+        tipBanner.appendChild(closeTipBtn);
+    }
+    
+    tipBanner.classList.remove('hidden');
+}
+
+// =============================================
+// GLOBAL FORMAT FUNCTION
 // =============================================
 function doInsertFormat(format) {
     if (!editor) return;
@@ -200,7 +241,7 @@ function doInsertFormat(format) {
     let newCursorStart, newCursorEnd;
     
     if (format.includes('# ') && !format.includes('[')) {
-        // Headers - add # before each line
+        // Headers
         const lines = selected.trim().split('\n').filter(l => l.trim());
         if (lines.length > 0) {
             newText = before + lines.map(line => format + line).join('\n') + after;
@@ -225,6 +266,13 @@ function doInsertFormat(format) {
         newText = before + format + '\n' + after;
         newCursorStart = startPos + format.length + 1;
         newCursorEnd = newCursorStart;
+    } else if (format === '> ') {
+        // Blockquotes
+        const lines = selected.split('\n');
+        const wrappedLines = lines.map(line => '> ' + line).join('\n');
+        newText = before + wrappedLines + after;
+        newCursorStart = startPos + 2;
+        newCursorEnd = newCursorStart + selected.length;
     } else {
         // Simple wrapping (bold, italic, lists)
         newText = before + format + selected + format + after;
@@ -245,11 +293,10 @@ function doInsertFormat(format) {
     localStorage.setItem(STORAGE_KEY, editor.value);
 }
 
-// Make it globally available
 window.insertFormat = doInsertFormat;
 
 // =============================================
-// EVENT LISTENERS SETUP - CENTRALIZED
+// EVENT LISTENERS SETUP
 // =============================================
 function setupEventListeners() {
     // =================== EDITOR INPUT ===================
@@ -259,13 +306,11 @@ function setupEventListeners() {
         updateStats();
     });
     
-    // =================== FORMAT BAR SHOW/HIDE (FIXED) ===================
-    // Don't hide on format bar clicks!
+    // =================== FORMAT BAR SHOW/HIDE (IMPROVED) ===================
     editor.addEventListener('focus', () => {
         if (formatBar) formatBar.classList.remove('hidden');
     });
     
-    // FIXED: Only hide if NOT clicking a format button
     editor.addEventListener('blur', (e) => {
         setTimeout(() => {
             const activeEl = document.activeElement;
@@ -277,15 +322,10 @@ function setupEventListeners() {
         }, 150);
     });
     
-    // Prevent format bar from being hidden when interacting with it
     if (formatBar) {
         formatBar.addEventListener('mousedown', (e) => {
-            e.preventDefault(); // Stop the blur on textarea
+            e.preventDefault();
             formatButtonClickPending = true;
-        });
-        
-        formatBar.addEventListener('click', (e) => {
-            formatButtonClickPending = false;
         });
     }
     
@@ -367,46 +407,54 @@ function setupEventListeners() {
     }
     
     // =================== KEYBOARD HANDLERS ===================
-    if (editor) {
-        // Global keyboard shortcuts & ESCAPE
-        document.addEventListener('keydown', (e) => {
-            // ESCAPE KEY
-            if (e.key === 'Escape') {
-                if (pageBody.classList.contains('focus-mode')) {
-                    toggleFocusMode();
-                }
-                if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
-                    pageBody.classList.remove('live-editing');
-                    e.preventDefault();
-                }
-            }
-            
-            // KEYBOARD SHORTCUTS (Ctrl/Cmd+B, I, K, H)
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key.toLowerCase() === 'b') {
-                    e.preventDefault();
-                    doInsertFormat('**');
-                }
-                if (e.key.toLowerCase() === 'i') {
-                    e.preventDefault();
-                    doInsertFormat('*');
-                }
-                if (e.key.toLowerCase() === 'k') {
-                    e.preventDefault();
-                    doInsertFormat('[link](https://example.com)');
-                }
-                if (e.key.toLowerCase() === 'h') {
-                    e.preventDefault();
-                    doInsertFormat('# ');
-                }
-            }
-        });
+    // Document-level listener for global shortcuts that don't conflict with browser
+    document.addEventListener('keydown', (e) => {
+        // Only intercept if we are NOT typing in a modal or other input
+        const isTypingInEditor = document.activeElement === editor;
         
-        // AUTO-CLOSE BRACKETS (in editor only)
+        // ESCAPE KEY
+        if (e.key === 'Escape') {
+            if (pageBody.classList.contains('focus-mode')) {
+                toggleFocusMode();
+            }
+            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
+                pageBody.classList.remove('live-editing');
+                e.preventDefault();
+            }
+            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
+                cheatsheetModal.classList.add('hidden');
+            }
+        }
+        
+        // KEYBOARD SHORTCUTS (Ctrl/Cmd+B, I, K, H, L)
+        // We only intercept if we are inside the editor to avoid blocking browser shortcuts
+        if (isTypingInEditor && (e.ctrlKey || e.metaKey)) {
+            const key = e.key.toLowerCase();
+            if (key === 'b') {
+                e.preventDefault();
+                doInsertFormat('**');
+            } else if (key === 'i') {
+                e.preventDefault();
+                doInsertFormat('*');
+            } else if (key === 'k') {
+                e.preventDefault();
+                doInsertFormat('[link](https://example.com)');
+            } else if (key === 'h') {
+                e.preventDefault();
+                doInsertFormat('# ');
+            } else if (key === 'l') {
+                e.preventDefault();
+                doInsertFormat('- ');
+            }
+        }
+    });
+    
+    // AUTO-CLOSE BRACKETS (in editor only)
+    if (editor) {
         editor.addEventListener('keydown', (e) => {
             if (!autoCloseEnabled) return;
             
-            // Skip if Shift is pressed (allows typing multiple symbols)
+            // Skip if Shift is pressed
             if (e.shiftKey) return;
             
             const pairs = {
@@ -419,7 +467,7 @@ function setupEventListeners() {
             };
             
             // Special case: asterisk for bold/italic
-            if (e.key === '*' && autoCloseEnabled) {
+            if (e.key === '*') {
                 e.preventDefault();
                 const startPos = editor.selectionStart;
                 const endPos = editor.selectionEnd;
@@ -428,11 +476,32 @@ function setupEventListeners() {
                 const selected = text.substring(startPos, endPos);
                 const after = text.substring(endPos);
                 
-                // Insert ** instead of just *
                 const newText = before + '**' + selected + '**' + after;
                 editor.value = newText;
                 
-                // Position cursor between the two asterisks
+                editor.selectionStart = startPos + 1;
+                editor.selectionEnd = startPos + 1 + selected.length;
+                editor.focus();
+                
+                updatePreview();
+                updateStats();
+                localStorage.setItem(STORAGE_KEY, editor.value);
+                return;
+            }
+            
+            // Special case: underscore for italic
+            if (e.key === '_') {
+                e.preventDefault();
+                const startPos = editor.selectionStart;
+                const endPos = editor.selectionEnd;
+                const text = editor.value;
+                const before = text.substring(0, startPos);
+                const selected = text.substring(startPos, endPos);
+                const after = text.substring(endPos);
+                
+                const newText = before + '__' + selected + '__' + after;
+                editor.value = newText;
+                
                 editor.selectionStart = startPos + 1;
                 editor.selectionEnd = startPos + 1 + selected.length;
                 editor.focus();
@@ -455,7 +524,6 @@ function setupEventListeners() {
                 const closingChar = pairs[e.key];
                 editor.value = before + e.key + selected + closingChar + after;
                 
-                // Position cursor AFTER the opening character
                 editor.selectionStart = startPos + 1;
                 editor.selectionEnd = startPos + 1 + selected.length;
                 editor.focus();
@@ -495,6 +563,11 @@ function applyLanguage(lang) {
         }
     });
     
+    // Update close tip button text if exists
+    if (closeTipBtn) {
+        closeTipBtn.title = translations[lang].closeTip || 'Close';
+    }
+    
     const statLabels = document.querySelectorAll('.stat-label');
     statLabels.forEach((label, index) => {
         const key = label.dataset.langKey;
@@ -509,7 +582,7 @@ function applyLanguage(lang) {
 }
 
 // =============================================
-// VIEW MODE HANDLER
+// VIEW MODE HANDLER (FIXED INITIAL STATE)
 // =============================================
 function setViewMode(mode) {
     pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing');
@@ -577,66 +650,87 @@ function downloadFile(content, filename, mimeType) {
 }
 
 // =============================================
-// RANDOM TIP
-// =============================================
-function showRandomTip() {
-    const tipsForLang = tips[currentLanguage];
-    const randomIndex = Math.floor(Math.random() * tipsForLang.length);
-    if (tipText) tipText.textContent = tipsForLang[randomIndex];
-    if (tipBanner) tipBanner.classList.remove('hidden');
-    
-    setTimeout(() => {
-        if (tipBanner) tipBanner.classList.add('hidden');
-    }, 5000);
-}
-
-// =============================================
-// CHEATSHEET DATA & POPULATION
+// CHEATSHEET DATA (ENRICHED)
 // =============================================
 const cheatsheetData = {
-    el: [
-        { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα 1' },
-        { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα 2' },
-        { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα 3' },
-        { title: 'Έντονο', example: '**έντονο κείμενο**' },
-        { title: 'Πλάγιο', example: '*πλάγιο κείμενο*' },
-        { title: 'Σύνδεσμος', example: '[Τίτλος](https://example.com)' },
-        { title: 'Εικόνα', example: '![Alt](image.jpg)' },
-        { title: 'Λίστα', example: '- Στοιχείο 1\n- Στοιχείο 2' },
-        { title: 'Αριθμημένη Λίστα', example: '1. Πρώτο\n2. Δεύτερο' },
-        { title: 'Κώδικας', example: '```\ncode here\n```' },
-        { title: 'Παράθεση', example: '> Παράθεση' },
-        { title: 'Πίνακας', example: '| Col1 | Col2 |\n|------|------|\n| A    | B    |' }
-    ],
-    en: [
-        { title: 'Heading 1', example: '# Heading 1' },
-        { title: 'Heading 2', example: '## Heading 2' },
-        { title: 'Heading 3', example: '### Heading 3' },
-        { title: 'Bold', example: '**bold text**' },
-        { title: 'Italic', example: '*italic text*' },
-        { title: 'Link', example: '[Title](https://example.com)' },
-        { title: 'Image', example: '![Alt](image.jpg)' },
-        { title: 'List', example: '- Item 1\n- Item 2' },
-        { title: 'Ordered List', example: '1. First\n2. Second' },
-        { title: 'Code', example: '```\ncode here\n```' },
-        { title: 'Quote', example: '> Quote' },
-        { title: 'Table', example: '| Col1 | Col2 |\n|------|------|\n| A    | B    |' }
-    ]
+    el: {
+        basic: [
+            { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα 1', desc: 'Χρησιμοποίησε ένα # για H1' },
+            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα 2', desc: 'Δύο #' για H2' },
+            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα 3', desc: 'Τρία #' για H3' },
+            { title: 'Έντονο', example: '**έντονο κείμενο**', desc: 'Δύο αστερίσκοι' },
+            { title: 'Πλάγιο', example: '*πλάγιο κείμενο*', desc: 'Ένας αστέρισκος' },
+            { title: 'Σύνδεσμος', example: '[Τίτλος](https://example.com)', desc: 'Γραμματική: [Ίσως](URL)' },
+            { title: 'Λίστα', example: '- Στοιχείο 1\n- Στοιχείο 2', desc: 'Αρχίζει με - ή *' },
+            { title: 'Αριθμημένη Λίστα', example: '1. Πρώτο\n2. Δεύτερο', desc: 'Αρχίζει με αριθμό.' }
+        ],
+        advanced: [
+            { title: 'Μπλοκ Κώδικα', example: '```\ncode here\n```', desc: 'Τρία backticks πριν και μετά' },
+            { title: 'Inline Κώδικας', example: '`code`', desc: 'Ένα backtick για inline' },
+            { title: 'Παράθεση', example: '> Παράθεση', desc: 'Προσθήκη > στην αρχή γραμμής' },
+            { title: 'Εικόνα', example: '![Alt Text](image.jpg)', desc: 'Όμοιο με σύνδεσμο, αλλά με !' },
+            { title: 'Πίνακας', example: '| Col1 | Col2 |\n|------|------|\n| A    | B    |', desc: 'Χρησιμοποίησε | για στήλες' },
+            { title: 'Διαχωριστική Γραμμή', example: '---', desc: 'Τρεις παύλες για γραμμή' },
+            { title: 'Υπογράμμιση', example: '<u>Υπογραμμισμένο</u>', desc: 'HTML tag για υπογράμμιση' },
+            { title: 'Κενό Γραμμής', example: '\\n\\n', desc: 'Δύο κενές γραμμές για νέα παράγραφο' }
+        ]
+    },
+    en: {
+        basic: [
+            { title: 'Heading 1', example: '# Heading 1', desc: 'One # for H1' },
+            { title: 'Heading 2', example: '## Heading 2', desc: 'Two ## for H2' },
+            { title: 'Heading 3', example: '### Heading 3', desc: 'Three ### for H3' },
+            { title: 'Bold', example: '**bold text**', desc: 'Double asterisks' },
+            { title: 'Italic', example: '*italic text*', desc: 'Single asterisk' },
+            { title: 'Link', example: '[Title](https://example.com)', desc: 'Syntax: [Text](URL)' },
+            { title: 'List', example: '- Item 1\n- Item 2', desc: 'Starts with - or *' },
+            { title: 'Ordered List', example: '1. First\n2. Second', desc: 'Starts with number.' }
+        ],
+        advanced: [
+            { title: 'Code Block', example: '```\ncode here\n```', desc: 'Triple backticks before and after' },
+            { title: 'Inline Code', example: '`code`', desc: 'Single backtick for inline' },
+            { title: 'Blockquote', example: '> Quote', desc: 'Add > at start of line' },
+            { title: 'Image', example: '![Alt Text](image.jpg)', desc: 'Like link but with !' },
+            { title: 'Table', example: '| Col1 | Col2 |\n|------|------|\n| A    | B    |', desc: 'Use | for columns' },
+            { title: 'Horizontal Rule', example: '---', desc: 'Three dashes for line' },
+            { title: 'Underline', example: '<u>Underlined</u>', desc: 'HTML tag for underline' },
+            { title: 'New Paragraph', example: '\\n\\n', desc: 'Two empty lines for new paragraph' }
+        ]
+    }
 };
 
 function populateCheatsheet() {
     const container = document.getElementById('cheatsheet-body');
     if (!container) return;
     
-    const items = cheatsheetData[currentLanguage];
+    const data = cheatsheetData[currentLanguage];
+    const t = translations[currentLanguage];
     
-    container.innerHTML = items.map(item => `
-        <div class="cheatsheet-item">
-            <h3>${item.title}</h3>
-            <p>${item.example.replace(/\n/g, '<br>')}</p>
-            <code>${item.example}</code>
-        </div>
-    `).join('');
+    let html = `<div class="cheatsheet-section"><h3>${t.basic}</h3>`;
+    data.basic.forEach(item => {
+        html += `
+            <div class="cheatsheet-item">
+                <h4>${item.title}</h4>
+                <p><small>${item.desc}</small></p>
+                <code>${item.example.replace(/\n/g, '<br>')}</code>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    
+    html += `<div class="cheatsheet-section"><h3>${t.advanced}</h3>`;
+    data.advanced.forEach(item => {
+        html += `
+            <div class="cheatsheet-item">
+                <h4>${item.title}</h4>
+                <p><small>${item.desc}</small></p>
+                <code>${item.example.replace(/\n/g, '<br>')}</code>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    
+    container.innerHTML = html;
 }
 
 // =============================================
