@@ -6,9 +6,10 @@ const THEME_KEY = 'lumo-editor-theme';
 const LANGUAGE_KEY = 'lumo-editor-language';
 const STATS_KEY = 'lumo-editor-stats-mode';
 const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
+const WRAP_KEY = 'lumo-editor-word-wrap';
 
 // VERSION CONFIGURATION
-const APP_VERSION = "1.0.6";
+const APP_VERSION = "1.0.7";
 const LAST_UPDATE_DATE = "11/06/2026";
 
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
@@ -16,9 +17,10 @@ let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = false;
 let wordWrapEnabled = true;
+let currentViewMode = 'split'; // Track view mode
 const WORDS_PER_MINUTE = 200;
 
-// Translations - COMPLETED FOR BOTH LANGUAGES
+// Translations - COMPLETE FOR BOTH LANGUAGES
 const translations = {
     el: {
         pageTitle: 'Επεξεργαστής Markdown',
@@ -29,7 +31,7 @@ const translations = {
         cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Βασικά', advanced: 'Προχωρημένα',
         closeTip: 'Κλείσιμο', shortcuts: 'Συντομεύσεις Πληκτρολογίου', exitMode: 'Έξοδος Λειτουργίας',
         fullGuide: 'Πλήρης Οδηγός Markdown', commonmark: 'CommonMark Spec', mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα.',
-        bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα', strikethrough: 'Διαγράμμιση',
+        bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα', strikethrough: 'Διαγράμμιση', numbered: 'Αριθμημένη',
         toastSaved: 'Αυτόματη αποθήκευση ολοκληρώθηκε.',
         toastExportMD: 'Εξαγωγή ως MD ολοκληρώθηκε.',
         toastExportTXT: 'Εξαγωγή ως TXT ολοκληρώθηκε.',
@@ -50,7 +52,7 @@ const translations = {
         cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Basics', advanced: 'Advanced',
         closeTip: 'Close', shortcuts: 'Keyboard Shortcuts', exitMode: 'Exit Mode',
         fullGuide: 'Full Markdown Guide', commonmark: 'CommonMark Spec', mdDesc: 'Markdown is a lightweight markup language.',
-        bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List', strikethrough: 'Strikethrough',
+        bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List', strikethrough: 'Strikethrough', numbered: 'Ordered',
         toastSaved: 'Auto-save completed.',
         toastExportMD: 'Export to MD completed.',
         toastExportTXT: 'Export to TXT completed.',
@@ -106,6 +108,7 @@ const tipText = document.getElementById('tip-text');
 const focusToast = document.getElementById('focus-toast');
 const fileInput = document.getElementById('file-input');
 const wordWrapBtn = document.getElementById('word-wrap-toggle');
+const statsBar = document.getElementById('stats-bar');
 const langToggle = document.getElementById('lang-toggle');
 const themeToggle = document.getElementById('theme-toggle');
 const modeEdit = document.getElementById('mode-edit');
@@ -166,7 +169,7 @@ function init() {
     if (savedContent) editor.value = savedContent;
     
     // Load settings
-    wordWrapEnabled = localStorage.getItem('word-wrap') !== 'false';
+    wordWrapEnabled = localStorage.getItem(WRAP_KEY) !== 'false';
     editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
     if(wordWrapBtn) wordWrapBtn.classList.toggle('active', wordWrapEnabled);
 
@@ -181,7 +184,7 @@ function init() {
     if (autoCloseToggle) autoCloseToggle.checked = autoCloseEnabled;
     
     showStickyTip();
-    setViewMode('split');
+    setViewMode('split'); // Initialize with split view
     updatePreview();
     updateStats();
     updateCursorPosition();
@@ -244,10 +247,11 @@ window.insertFormat = function(format) {
             newCursorEnd = newCursorStart + selected.length;
         }
     } else if (format === '1. ') {
-        // NUMBERED LIST AUTO-INCREMENT
+        // NUMBERED LIST AUTO-INCREMENT WITH PROPER PATTERN
+        e.preventDefault ? null : null; // Placeholder for preventDefault context
         const lines = before.split('\n');
         const lastLine = lines[lines.length - 1];
-        const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
+        const numMatch = /^\s*(\d+)\.\s*/.exec(lastLine);
         let nextNum = 1;
         
         if (numMatch) {
@@ -302,7 +306,7 @@ window.insertFormat = function(format) {
 };
 
 // =============================================
-// KEYBOARD EVENT HANDLER WITH NUMBERED LIST LOGIC
+// KEYBOARD EVENT HANDLER (NUMBERED LIST LOGIC)
 // =============================================
 function handleEditorKeydown(e) {
     if (e.key === 'Enter') {
@@ -311,7 +315,7 @@ function handleEditorKeydown(e) {
         const lines = textUpToCursor.split('\n');
         const lastLine = lines[lines.length - 1];
         
-        // Check if previous line starts with number pattern (1. )
+        // Check if previous line starts with number pattern (1. ) - NO CHAR AFTER PERIOD
         const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
         if (numMatch) {
             e.preventDefault();
@@ -337,222 +341,34 @@ function handleEditorKeydown(e) {
 }
 
 // =============================================
-// EVENT LISTENERS
+// VIEW MODE MANAGEMENT
 // =============================================
-function setupEventListeners() {
-    editor.addEventListener('input', () => {
-        localStorage.setItem(STORAGE_KEY, editor.value);
-        updatePreview();
-        updateStats();
-        updateCursorPosition();
-    });
+function setViewMode(mode) {
+    currentViewMode = mode;
+    pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing', 'read-only');
+    [modeEdit, modeLive, modePreview, modeSplit].forEach(m => m?.classList.remove('active'));
     
-    editor.addEventListener('keydown', handleEditorKeydown);
-    editor.addEventListener('keyup', updateCursorPosition);
-    editor.addEventListener('click', updateCursorPosition);
-
-    if (themeToggle) themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
-    if (langToggle) langToggle.addEventListener('click', () => applyLanguage(currentLanguage === 'el' ? 'en' : 'el'));
-    
-    if (modeEdit) modeEdit.addEventListener('click', () => setViewMode('edit'));
-    if (modeLive) modeLive.addEventListener('click', () => setViewMode('live'));
-    if (modePreview) modePreview.addEventListener('click', () => setViewMode('preview'));
-    if (modeSplit) modeSplit.addEventListener('click', () => setViewMode('split'));
-    
-    if (modeFocus) modeFocus.addEventListener('click', () => {
-        toggleFocusMode();
-        if (pageBody.classList.contains('focus-mode')) showFocusToast();
-    });
-    
-    if (mdStatsToggle) mdStatsToggle.addEventListener('change', e => {
-        currentStatsMode = e.target.checked ? 'md-clean' : 'raw';
-        localStorage.setItem(STATS_KEY, currentStatsMode);
-        updateStats();
-    });
-    
-    if (autoCloseToggle) {
-        autoCloseToggle.checked = autoCloseEnabled;
-        autoCloseToggle.addEventListener('change', e => {
-            autoCloseEnabled = e.target.checked;
-            localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
-        });
-    }
-	
-	// ADD THIS NEW BUTTON HANDLER FOR NUMBERED LISTS
-const numListBtn = document.querySelector("button[onclick=\"insertFormat('1. ')\"]");
-if (!numListBtn) {
-    // Create it if doesn't exist
-    const fmtBar = document.getElementById('format-bar');
-    const btn = document.createElement('button');
-    btn.className = 'fmt-btn';
-    btn.textContent = '1.';
-    btn.title = 'Numbered List / Αριθμημένη Λίστα';
-    btn.onclick = () => insertFormat('1. ');
-    fmtBar.insertBefore(btn, fmtBar.children[6]); // Insert after Quote button
-} else {
-    numListBtn.title = 'Numbered List / Αριθμημένη Λίστα';
-}
-
-    // Word Wrap Toggle
-    if (wordWrapBtn) {
-        wordWrapBtn.addEventListener('click', () => {
-            wordWrapEnabled = !wordWrapEnabled;
-            editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
-            wordWrapBtn.classList.toggle('active', wordWrapEnabled);
-            localStorage.setItem('word-wrap', wordWrapEnabled);
-            showToast(wordWrapEnabled ? 'Word Wrap: ON' : 'Word Wrap: OFF', 'info');
-        });
-    }
-
-    // Export Buttons
-    if (exportMd) exportMd.addEventListener('click', () => { downloadFile(editor.value, 'document.md', 'text/markdown'); showToast(translations[currentLanguage].toastExportMD, 'success'); });
-    if (exportTxt) exportTxt.addEventListener('click', () => { downloadFile(editor.value, 'document.txt', 'text/plain'); showToast(translations[currentLanguage].toastExportTXT, 'success'); });
-    if (exportPdf) exportPdf.addEventListener('click', () => { window.print(); showToast(currentLanguage === 'el' ? 'Παράθυρο Εκτύπωσης' : 'Print Dialog', 'info'); });
-    if (exportHtml) exportHtml.addEventListener('click', () => { exportAsHTML(); showToast(translations[currentLanguage].toastExportHTML, 'success'); });
-
-    if (openFileBtn) openFileBtn.addEventListener('click', () => { if (fileInput) fileInput.click(); });
-    if (fileInput) fileInput.addEventListener('change', handleFileOpen);
-
-    if (cheatsheetBtn) cheatsheetBtn.addEventListener('click', () => { populateCheatsheet(); cheatsheetModal?.classList.remove('hidden'); });
-    if (closeCheatsheet) closeCheatsheet.addEventListener('click', () => cheatsheetModal?.classList.add('hidden'));
-    if (cheatsheetModal) cheatsheetModal.addEventListener('click', e => { if (e.target === cheatsheetModal) cheatsheetModal.classList.add('hidden'); });
-
-    if (preview?.parentElement) {
-        preview.parentElement.addEventListener('click', e => {
-            if (pageBody.classList.contains('live-mode') && !pageBody.classList.contains('live-editing') && !e.target.closest('.toolbar') && !e.target.closest('.top-bar')) {
-                e.stopPropagation();
-                pageBody.classList.add('live-editing');
-                editor.focus();
-                editor.selectionStart = editor.selectionEnd = editor.value.length;
-            }
-        });
-    }
-
-    const clearBtn = document.getElementById('clear-content-btn');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            if (confirm('Είστε σίγουροι ότι θέλετε να εκκαθαρίσετε όλο το περιεχόμενο;')) {
-                editor.value = '';
-                localStorage.setItem(STORAGE_KEY, '');
-                updatePreview();
-                updateStats();
-                updateCursorPosition();
-                editor.focus();
-                showToast(translations[currentLanguage].toastCleared, 'warning');
-            }
-        });
-    }
-
-    document.addEventListener('keydown', e => {
-        const isEditorActive = document.activeElement === editor;
-        
-        if (e.key === 'Escape') {
-            if (pageBody.classList.contains('focus-mode')) {
-                toggleFocusMode();
-                clearTimeout(window.focusToastTimer);
-                if (focusToast) { focusToast.classList.remove('show'); setTimeout(() => focusToast.classList.add('hidden'), 300); }
-            }
-            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
-                pageBody.classList.remove('live-editing');
-                e.preventDefault();
-            }
-            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
-                cheatsheetModal.classList.add('hidden');
-                e.preventDefault();
-            }
-        }
-
-        if (isEditorActive && (e.ctrlKey || e.metaKey)) {
-            const key = e.key.toLowerCase();
-            if (key === 'b') { e.preventDefault(); insertFormat('**'); }
-            else if (key === 'i') { e.preventDefault(); insertFormat('*'); }
-            else if (key === 'k') { e.preventDefault(); insertFormat('[link](https://example.com)'); }
-            else if (key === 'h') { e.preventDefault(); insertFormat('# '); }
-            else if (key === 'l') { e.preventDefault(); insertFormat('- '); }
-        }
-    });
-
-    // ============================================
-    // CUSTOM CONTEXT MENU (FIXED PASTE ICON)
-    // ============================================
-    editor.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        
-        const t = translations[currentLanguage];
-        const menuHTML = `
-            <div class="custom-context-menu" style="position:fixed; top:${e.clientY}px; left:${e.clientX}px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.2); min-width:180px; z-index:9999; overflow:hidden;">
-                <div class="ctx-item" onclick="insertFormat('**')"><span>🔶</span> ${t.ctxBold}</div>
-                <div class="ctx-item" onclick="insertFormat('*')"><span>🔸</span> ${t.ctxItalic}</div>
-                <div class="ctx-item" onclick="insertFormat('~~')"><span>❌</span> ${t.ctxStrike}</div>
-                <div class="ctx-item" onclick="insertFormat('[link](url)')"><span>🔗</span> ${t.ctxLink}</div>
-                <div class="ctx-divider"></div>
-                <div class="ctx-item" onclick="copyAsHTML()"><span>📋</span> ${t.ctxCopyHTML}</div>
-                <div class="ctx-divider"></div>
-                <div class="ctx-item" onclick="execCmd('cut')"><span>✂️</span> ${t.ctxCut}</div>
-                <div class="ctx-item" onclick="execCmd('copy')"><span>📋</span> ${t.ctxCopy}</div>
-                <div class="ctx-item" onclick="execCmd('paste')"><span>📋</span> ${t.ctxPaste}</div>
-            </div>
-        `;
-        
-        const existingMenu = document.querySelector('.custom-context-menu');
-        if (existingMenu) existingMenu.remove();
-        
-        const menu = document.createElement('div');
-        menu.innerHTML = menuHTML;
-        document.body.appendChild(menu);
-        
-        const closeMenu = () => {
-            if (document.querySelector('.custom-context-menu')) {
-                document.querySelector('.custom-context-menu').remove();
-                document.removeEventListener('click', closeMenu);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', closeMenu), 10);
-    });
-
-    // ============================================
-    // AUTO-CLOSE BRACKETS (FINAL FIXED CURSOR POSITION)
-    // ============================================
-    if (editor) {
-        editor.addEventListener('keydown', function(e) {
-            if (!autoCloseEnabled) return;
-            
-            const isSpecialChar = ['_', '*'].includes(e.key);
-            if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
-            if (typeof e.key !== 'string' || e.key.length !== 1) return;
-            
-            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
-            
-            if (e.key === '*') {
-                e.preventDefault();
-                const pos = editor.selectionStart;
-                const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 2; // FIXED: 2 asterisks after
-                editor.dispatchEvent(new Event('input'));
-                return;
-            }
-            
-            if (e.key === '_') {
-                e.preventDefault();
-                const pos = editor.selectionStart;
-                const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 2; // FIXED: 2 underscores after
-                editor.dispatchEvent(new Event('input'));
-                return;
-            }
-            
-            if (pairs[e.key]) {
-                e.preventDefault();
-                const pos = editor.selectionStart;
-                const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 1;
-                editor.dispatchEvent(new Event('input'));
-                return;
-            }
-        });
+    switch (mode) {
+        case 'edit': 
+            pageBody.classList.add('edit-only'); 
+            modeEdit?.classList.add('active');
+            statsBar.style.display = 'flex';
+            break;
+        case 'live': 
+            pageBody.classList.add('live-mode'); 
+            modeLive?.classList.add('active');
+            statsBar.style.display = 'flex';
+            break;
+        case 'preview': 
+            pageBody.classList.add('preview-only', 'read-only'); 
+            modePreview?.classList.add('active');
+            statsBar.style.display = 'none'; // Hide stats in preview
+            break;
+        default: // split
+            pageBody.classList.add('split-mode'); 
+            modeSplit?.classList.add('active');
+            statsBar.style.display = 'flex';
+            break;
     }
 }
 
@@ -585,8 +401,8 @@ function exportAsHTML() {
         h1 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
         pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; }
         code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
-        blockquote { border-left: 4px solid #2196F3; padding-left: 1rem; color: #666; }
-        img { max-width: 100%; height: auto; }
+        blockquote { border-left: 4px solid #3B82F6; padding-left: 1rem; color: #666; }
+        img { max-width: 100%; height: auto; border-radius: 4px; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
         th { background: #f4f4f4; }
@@ -661,17 +477,6 @@ function applyLanguage(lang) {
     if (closeTip) closeTip.title = translations[lang].closeTip || 'Close';
 }
 
-function setViewMode(mode) {
-    pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing');
-    [modeEdit, modeLive, modePreview, modeSplit].forEach(m => m?.classList.remove('active'));
-    switch (mode) {
-        case 'edit': pageBody.classList.add('edit-only'); modeEdit?.classList.add('active'); break;
-        case 'live': pageBody.classList.add('live-mode'); modeLive?.classList.add('active'); break;
-        case 'preview': pageBody.classList.add('preview-only'); modePreview?.classList.add('active'); break;
-        default: pageBody.classList.add('split-mode'); modeSplit?.classList.add('active'); break;
-    }
-}
-
 function toggleFocusMode() {
     pageBody.classList.toggle('focus-mode');
     modeFocus?.classList.toggle('active');
@@ -734,11 +539,6 @@ const cheatsheetData = {
     el: {
         basic: [
             { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' },
-            { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' },
-            { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
-            { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },
-            { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' },
-                        { title: 'Κεφαλίδα 1', example: '# Κεφαλίδα', desc: 'Ένα #' },
             { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' },
             { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
             { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },

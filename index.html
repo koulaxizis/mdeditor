@@ -38,15 +38,8 @@
         </div>
     </header>
 
-    <!-- Toolbar -->
+    <!-- Toolbar - Format Bar on Right -->
     <div class="toolbar">
-        <div class="mode-group">
-            <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
-            <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
-            <button id="mode-live" class="mode-btn" title="Live Preview / Ζωντανή Προβολή" data-lang-key="liveMode">👁️ Live</button>
-            <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
-        </div>
-        
         <div class="stats-toggle-group">
             <label title="MD Clean vs Raw / Καθαρή ή Πλήρης μέτρηση" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
@@ -59,7 +52,7 @@
             </label>
         </div>
 
-        <!-- Format Bar with Word Wrap Toggle -->
+        <!-- Format Bar RIGHT ALIGNED -->
         <div class="format-bar" id="format-bar">
              <button class="fmt-btn" title="Bold / Έντονο (Ctrl+B)" onclick="insertFormat('**')">B</button>
              <button class="fmt-btn" title="Italic / Πλάγιο (Ctrl+I)" onclick="insertFormat('*')">I</button>
@@ -70,12 +63,11 @@
              <button class="fmt-btn" title="Heading 3 / Κεφαλίδα 3" onclick="insertFormat('### ')">H3</button>
              <button class="fmt-btn" title="Link / Σύνδεσμος" onclick="insertFormat('[link](url)')">🔗</button>
              <button class="fmt-btn" title="List / Λίστα" onclick="insertFormat('- ')">•</button>
+             <button class="fmt-btn" id="numbered-list-btn" title="Numbered List / Αριθμημένη Λίστα" onclick="insertFormat('1. ')">1.</button>
              <button class="fmt-btn" title="Quote / Παράθεση" onclick="insertFormat('> ')">"</button>
              <button class="fmt-btn" title="Code Block / Μπλοκ Κώδικα" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
              <button class="fmt-btn" title="Horizontal Line / Διαχωριστική" onclick="insertFormat('\n---\n')">—</button>
         </div>
-        
-        <div class="export-group" style="flex-grow: 1;"></div>
     </div>
 
     <!-- Tip Banner -->
@@ -85,16 +77,18 @@
 
     <!-- Main Content -->
     <main class="main-container">
+        <!-- Edit Panel -->
         <div id="edit-panel" class="panel active">
             <textarea id="editor" class="editor-textarea" placeholder="Write your markdown here..." spellcheck="false"></textarea>
         </div>
 
+        <!-- Preview Panel (Read Only when in preview mode) -->
         <div id="preview-panel" class="panel">
             <div id="preview-content" class="preview-wrapper"></div>
         </div>
 
-        <!-- Stats Bar (2 Lines) -->
-        <div id="stats-bar" class="stats-bar">
+        <!-- Stats Bar - BELOW EDIT PANEL ONLY -->
+        <div id="stats-bar" class="stats-bar" style="display: none;">
             <div class="stats-row main-stats">
                 <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
                 <span>|</span>
@@ -110,19 +104,30 @@
         </div>
     </main>
 
-   <!-- Footer -->
-<footer class="footer">
-    <div class="footer-main">
-        <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
-        <span id="version-info" class="version-badge"></span>
+    <!-- Footer - Clickable Name, Fixed Colors -->
+    <footer class="footer">
+        <div class="footer-main">
+            <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer" class="designer-link">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
+            <span id="version-info" class="version-badge"></span>
+        </div>
+        <div class="footer-sub"><span>No cookies • No tracking • No ads • No Sponsors</span></div>
+        <div class="footer-legal">
+            <a href="https://github.com/koulaxizis/mdeditor" target="_blank" rel="noopener noreferrer" class="repo-link">GitHub Repository</a> • 
+            <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer" class="license-link">Licensed under MIT</a> • 
+            <span>Privacy First</span> • <span>Minimal Design</span>
+        </div>
+    </footer>
+
+    <!-- Cheatsheet Modal -->
+    <div id="cheatsheet-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-lang-key="cheatSheetTitle">Cheat Sheet Markdown</h2>
+                <button id="close-cheatsheet" class="close-btn">&times;</button>
+            </div>
+            <div id="cheatsheet-body" class="cheatsheet-body"></div>
+        </div>
     </div>
-    <div class="footer-sub"><span>No cookies • No tracking • No ads • No Sponsors</span></div>
-    <div class="footer-legal">
-        <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer">Licensed under MIT</a> • 
-        <a href="https://github.com/koulaxizis/mdeditor" target="_blank" rel="noopener noreferrer">GitHub Repository</a> • 
-        <span>Privacy First</span> • <span>Minimal Design</span>
-    </div>
-</footer>
 
     <!-- Focus Toast -->
     <div id="focus-toast" class="focus-toast hidden">

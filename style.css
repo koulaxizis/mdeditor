@@ -1,8 +1,8 @@
 /* =============================================
-   ROOT VARIABLES (Midnight Blue Theme)
+   ROOT VARIABLES (Midnight Blue & Carbon Grey)
    ============================================= */
 :root {
-    /* Light Theme - Softer Midnight Blue Tones */
+    /* Light Theme - Soft Blue Tones */
     --bg-primary: #F8FAFC;
     --bg-secondary: #E9F0F7;
     --bg-tertiary: #D4E0EE;
@@ -27,16 +27,16 @@
 }
 
 [data-theme="dark"] {
-    /* Dark Theme - Deep Midnight Blue */
-    --bg-primary: #0A1628;
-    --bg-secondary: #0F1C30;
-    --bg-tertiary: #142338;
-    --text-primary: #E6EEF8;
-    --text-secondary: #A0AEC0;
-    --border-color: #1E2D44;
+    /* Dark Theme - Deep Carbon Grey Midnight */
+    --bg-primary: #111827;
+    --bg-secondary: #1F2937;
+    --bg-tertiary: #374151;
+    --text-primary: #E5E7EB;
+    --text-secondary: #9CA3AF;
+    --border-color: #374151;
     --accent-color: #60A5FA;
     --hover-bg: rgba(96, 165, 250, 0.15);
-    --code-bg: #15243A;
+    --code-bg: #1F2937;
     --shadow-light: rgba(0, 0, 0, 0.3);
 }
 
@@ -158,17 +158,32 @@ html, body {
 }
 
 /* =============================================
-   TOOLBAR
+   TOOLBAR (Format Bar RIGHT ALIGNED)
    ============================================= */
 .toolbar {
     display: flex;
-    justify-content: center; /* Center everything */
+    justify-content: flex-end;
     align-items: center;
     gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
     flex-wrap: wrap;
+}
+
+.stats-toggle-group {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.format-bar {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+    justify-content: flex-end; /* Right aligned format bar */
+    flex-grow: 1;
+    max-width: 800px;
 }
 
 .mode-group {
@@ -193,25 +208,6 @@ html, body {
     border-color: var(--accent-color);
 }
 
-.stats-toggle-group {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding-left: var(--spacing-md);
-    border-left: 1px solid var(--border-color);
-}
-
-/* TOOLBAR CENTERED FORMAT BAR */
-
-.format-bar {
-    display: flex;
-    gap: var(--spacing-xs);
-    flex-wrap: wrap;
-    justify-content: center; /* Format bar centered */
-    flex-grow: 1;
-    max-width: 600px;
-}
-
 .fmt-btn {
     background: transparent;
     border: 1px solid var(--border-color);
@@ -229,10 +225,6 @@ html, body {
     background: var(--hover-bg);
     color: var(--accent-color);
     border-color: var(--accent-color);
-}
-
-.export-group {
-    flex-grow: 1;
 }
 
 /* =============================================
@@ -338,7 +330,7 @@ html, body {
 }
 
 /* =============================================
-   VIEW MODES
+   VIEW MODES (FIXED SPLIT MODE)
    ============================================= */
 .panel {
     flex: 1;
@@ -352,15 +344,17 @@ html, body {
     display: block;
 }
 
-/* SPLIT MODE FIX */
+/* Split Mode - BOTH PANELS VISIBLE */
 .split-mode .panel:first-child {
     display: block !important;
-    width: 50%;
+    width: 50% !important;
+    flex: 0 0 50%;
 }
 
 .split-mode .panel:last-child {
     display: block !important;
-    width: 50%;
+    width: 50% !important;
+    flex: 0 0 50%;
 }
 
 .split-mode .main-container {
@@ -370,12 +364,12 @@ html, body {
 
 /* Edit Only */
 .edit-only .panel:first-child {
-    display: block;
+    display: block !important;
 }
 
 /* Preview Only */
 .preview-only .panel:last-child {
-    display: block;
+    display: block !important;
 }
 
 /* Live Mode */
@@ -386,6 +380,12 @@ html, body {
 
 .live-editing .editor-textarea {
     border: 2px solid var(--accent-color);
+}
+
+/* Read-only mode (preview) */
+.read-only .editor-textarea {
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 /* Focus Mode */
@@ -415,10 +415,10 @@ html, body {
 }
 
 /* =============================================
-   STATS BAR (FIXED LAYOUT - 2 Lines)
+   STATS BAR (BELOW EDIT PANEL ONLY)
    ============================================= */
 .stats-bar {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 6px;
     padding: 0.6rem 1.2rem;
@@ -503,15 +503,15 @@ html, body {
 }
 
 .toast-success {
-    border-left: 4px solid #4CAF50;
+    border-left: 4px solid #10B981;
 }
 
 .toast-error {
-    border-left: 4px solid #f44336;
+    border-left: 4px solid #EF4444;
 }
 
 .toast-warning {
-    border-left: 4px solid #ff9800;
+    border-left: 4px solid #F59E0B;
 }
 
 /* =============================================
@@ -552,7 +552,7 @@ html, body {
    TIP BANNER
    ============================================= */
 .tip-banner {
-    background: linear-gradient(135deg, var(--accent-color), #66BB6A);
+    background: linear-gradient(135deg, var(--accent-color), #60A5FA);
     color: white;
     padding: 10px 16px;
     font-size: 0.85rem;
@@ -604,19 +604,30 @@ html, body {
     margin-top: 4px;
 }
 
-.footer-legal span, .footer-legal a {
-    font-size: 0.75rem;
+/* DESIGNER LINK - RESTRICTED COLOR */
+.designer-link {
     color: var(--text-secondary);
-    margin-top: 4px;
-}
-
-.footer-legal a {
-    color: var(--accent-color);
+    font-size: 0.8rem;
     text-decoration: none;
     transition: opacity 0.2s;
 }
 
-.footer-legal a:hover {
+.designer-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+/* REPOSITORY AND LICENSE LINKS - MODERATE BLUE */
+.repo-link,
+.license-link {
+    color: #60A5FA;
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.repo-link:hover,
+.license-link:hover {
     opacity: 0.8;
     text-decoration: underline;
 }
