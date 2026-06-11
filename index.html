@@ -44,15 +44,23 @@
     <div class="toolbar">
         <div class="mode-group">
             <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
+            <!-- NEW: Preview Mode Button added here -->
+            <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
             <button id="mode-live" class="mode-btn" title="Live Preview (Inline)" data-lang-key="liveMode">👁️ Live</button>
             <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
         </div>
         
-        <!-- Stats Toggle Group -->
+        <!-- Stats Toggle Group (Now includes Auto-Close) -->
         <div class="stats-toggle-group">
             <label title="MD Clean: Αγνοεί syntax χαρακτήρες | Raw: Μετρά όλα τα χαρακτήρα" style="font-size:0.8rem; color:var(--text-secondary); display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
                 <span data-lang-key="cleanStats">MD Clean</span>
+            </label>
+            
+            <!-- MOVED: Auto-Close Toggle here, next to MD Clean -->
+            <label title="Αυτόματο κλείσιμο:" style="font-size:0.8rem; padding-left: 10px; border-left: 1px solid var(--border-color); margin-left: 5px; display:flex; align-items:center; gap:5px;">
+                <input type="checkbox" id="auto-close-toggle"> 
+                <span>Auto-Close</span>
             </label>
         </div>
 
@@ -71,13 +79,8 @@
              <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
         </div>
         
-        <div class="export-group">
-            <!-- Auto-Close Toggle HERE -->
-            <label title="Αυτόματο κλείσιμο:" style="font-size:0.8rem; padding:0 5px; border-left:1px solid var(--border-color); display:flex; align-items:center; gap:5px;">
-                <input type="checkbox" id="auto-close-toggle"> 
-                <span>Auto-Close</span>
-            </label>
-        </div>
+        <!-- Empty group or removed since Auto-Close moved -->
+        <div class="export-group" style="flex-grow: 1;"></div>
     </div>
 
     <!-- Random Tip Banner -->
