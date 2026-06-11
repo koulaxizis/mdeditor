@@ -161,16 +161,12 @@ function init() {
     if (currentStatsMode === 'md-clean' && mdStatsToggle) mdStatsToggle.checked = true;
     else if (mdStatsToggle) mdStatsToggle.checked = false;
     
-    // Load Auto-Close state
+    // Load Auto-Close state from localStorage
     const savedAutoClose = localStorage.getItem(AUTO_CLOSE_KEY);
     autoCloseEnabled = (savedAutoClose === 'true');
+    if (autoCloseToggle) autoCloseToggle.checked = autoCloseEnabled;
     
-    if (autoCloseToggle) {
-        autoCloseToggle.checked = autoCloseEnabled;
-        console.log("✓ Initial Auto-Close state loaded:", autoCloseEnabled);
-    }
-    
-    showStickyTip(); // Ensure this runs
+    showStickyTip();
     setViewMode('split');
     updatePreview();
     updateStats();
@@ -179,30 +175,26 @@ function init() {
 }
 
 // =============================================
-// STICKY TIP (FIXED TO ALWAYS SHOW ON FIRST LOAD IF NOT CLOSED)
+// STICKY TIP
 // =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
     
-    // Check if user has explicitly closed it before
     const wasClosed = localStorage.getItem('tip-closed');
-    
     if (wasClosed === 'true') {
         tipBanner.classList.add('hidden');
         return;
     }
     
-    // Show random tip
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
     tipText.textContent = tipsForLang[randomIndex];
     
-    // Create close button if not exists
     if (!document.querySelector('.close-tip-btn')) {
         const btn = document.createElement('span');
         btn.textContent = '✕';
         btn.className = 'close-tip-btn';
-        btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px; font-size: 0.9rem;';
+        btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px; font-size:0.9rem;';
         btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
         btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.backgroundColor = 'transparent'; };
         btn.onclick = () => {
@@ -213,11 +205,10 @@ function showStickyTip() {
     }
     
     tipBanner.classList.remove('hidden');
-    console.log("✓ Sticky Tip displayed");
 }
 
 // =============================================
-// GLOBAL FORMAT FUNCTION (FIXED LIST BUG)
+// GLOBAL FORMAT FUNCTION
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
@@ -237,8 +228,8 @@ window.insertFormat = function(format) {
         const hasListPrefix = /^\s*[-*]\s/.test(lastLine);
         
         if (hasListPrefix) {
-            newText = text + '\n- ';
-            newCursorStart = startPos + 2;
+            newText = before + '\n- ' + selected + after;
+            newCursorStart = startPos + 3;
             newCursorEnd = newCursorStart;
         } else {
             newText = before + format + selected + after;
@@ -326,7 +317,6 @@ function setupEventListeners() {
         autoCloseToggle.addEventListener('change', e => {
             autoCloseEnabled = e.target.checked;
             localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
-            console.log("✓ Auto-Close updated via checkbox:", autoCloseEnabled);
         });
     }
 
@@ -397,39 +387,16 @@ function setupEventListeners() {
     });
 
     // ============================================
-    // AUTO-CLOSE BRACKETS (FIXED SHIFT KEY ISSUE)
+    // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
     // ============================================
     if (editor) {
         editor.addEventListener('keydown', function(e) {
-            // DEBUG LOGS
-            console.log("KeyDown Event:", { 
-                key: e.key, 
-                length: e.key?.length, 
-                enabled: autoCloseEnabled,
-                activeElement: document.activeElement === editor,
-                modifiers: { shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey }
-            });
+            if (!autoCloseEnabled) return;
             
-            // Check 1: Is Auto-Close enabled?
-            if (!autoCloseEnabled) {
-                console.log("❌ Auto-Close is DISABLED");
-                return;
-            }
-            
-            // Check 2: No modifier keys EXCEPT Shift (if the key itself requires it like _)
-            // We allow Shift ONLY if the key is one of our special pairs ( _ , * ) because they often require shift on some layouts.
+            // Allow Shift for special chars (_, *) since they require it on some layouts
             const isSpecialChar = ['_', '*'].includes(e.key);
-            
-            if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) {
-                console.log("❌ Modifier key pressed (or unexpected shift)");
-                return;
-            }
-            
-            // Check 3: Is it a single character?
-            if (typeof e.key !== 'string' || e.key.length !== 1) {
-                console.log("❌ Not a single character");
-                return;
-            }
+            if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
+            if (typeof e.key !== 'string' || e.key.length !== 1) return;
             
             const pairs = { 
                 '(': ')', 
@@ -442,38 +409,39 @@ function setupEventListeners() {
             
             // Special case: asterisk -> **
             if (e.key === '*') {
-                console.log("✅ Processing * for bold");
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'select');
+                editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
+                // Place cursor BETWEEN the asterisks
+                editor.selectionStart = editor.selectionEnd = pos + 1;
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
             
             // Special case: underscore -> __
             if (e.key === '_') {
-                console.log("✅ Processing _ for italic");
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'select');
+                editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
+                // Place cursor BETWEEN the underscores
+                editor.selectionStart = editor.selectionEnd = pos + 1;
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
             
             // Regular pairs
             if (pairs[e.key]) {
-                console.log(`✅ Processing pair: ${e.key}`);
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'select');
+                editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'end');
+                // Place cursor AFTER the opening character
+                editor.selectionStart = editor.selectionEnd = pos + 1;
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
-            
-            console.log("ℹ️ Character not in pairs list");
         });
     }
 }
@@ -611,7 +579,16 @@ function updateStats() {
     const text = editor.value;
     let c, w, p;
     if (currentStatsMode === 'md-clean') {
-        const clean = text.replace(/^(#{1,6}\s)|^\s*[-*+]\s|^\s*\d+\.\s|\*\*(.*?)\*\*|\*(.*?)\*|!\[.*?\]\(.*?\)|\[.*?\]\(.*?\)|`(.*?)`|^>\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+        const clean = text
+            .replace(/^(#{1,6}\s)/gm, '')
+            .replace(/^\s*[-*+]\s+/gm, '')
+            .replace(/^\s*\d+\.\s+/gm, '')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+            .replace(/`(.*?)`/g, '$1')
+            .replace(/^>\s+/gm, '');
         c = clean.length;
         w = clean.trim() === '' ? 0 : clean.trim().split(/\s+/).filter(x => x).length;
         p = clean.split(/\n\s*\n/).filter(x => x.trim()).length;
@@ -625,5 +602,8 @@ function updateStats() {
     if (paraCountEl) paraCountEl.textContent = p.toLocaleString();
 }
 
+// =============================================
+// START
+// =============================================
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
