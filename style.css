@@ -524,6 +524,75 @@ body.focus-mode #preview-panel {
 }
 
 /* =============================================
+   TRUE LIVE MODE (Obsidian-style)
+   ============================================= */
+
+/* Live Mode: Only preview visible by default */
+body.live-mode #edit-panel {
+    display: none !important;
+}
+
+body.live-mode #preview-panel {
+    width: 100% !important;
+    display: block !important;
+    height: calc(100vh - 160px) !important;
+    cursor: text;
+    position: relative;
+}
+
+/* When editing in live mode, show textarea as overlay */
+body.live-mode.live-editing #edit-panel {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 20;
+    background-color: var(--bg-primary);
+    padding: 1.5rem;
+    opacity: 1;
+    animation: fadeInLive 0.15s ease;
+}
+
+body.live-mode.live-editing #preview-panel {
+    display: none !important;
+}
+
+/* Live mode: subtle "click to edit" hint on hover */
+body.live-mode:not(.live-editing) #preview-panel:hover::after {
+    content: '✏️ Κλικ για επεξεργασία';
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 50;
+}
+
+@keyframes fadeInLive {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Focus Mode override: always show editor */
+body.focus-mode.live-mode #edit-panel {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+}
+
+body.focus-mode.live-mode #preview-panel {
+    display: none !important;
+}
+
+/* =============================================
    RESPONSIVE
    ============================================= */
 @media (max-width: 768px) {
