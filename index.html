@@ -38,8 +38,17 @@
         </div>
     </header>
 
-    <!-- Toolbar - Format Bar on Right -->
+    <!-- Toolbar - WITH MODES ON LEFT, FORMAT BAR ON RIGHT -->
     <div class="toolbar">
+        <!-- Mode Buttons Group -->
+        <div class="mode-group">
+            <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
+            <button id="mode-preview" class="mode-btn" data-lang-key="previewMode">Προεπισκόπηση</button>
+            <button id="mode-live" class="mode-btn" title="Live Preview / Ζωντανή Προβολή" data-lang-key="liveMode">👁️ Live</button>
+            <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
+        </div>
+        
+        <!-- Stats Toggle Options -->
         <div class="stats-toggle-group">
             <label title="MD Clean vs Raw / Καθαρή ή Πλήρης μέτρηση" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
@@ -82,29 +91,29 @@
             <textarea id="editor" class="editor-textarea" placeholder="Write your markdown here..." spellcheck="false"></textarea>
         </div>
 
-        <!-- Preview Panel (Read Only when in preview mode) -->
+        <!-- Preview Panel -->
         <div id="preview-panel" class="panel">
             <div id="preview-content" class="preview-wrapper"></div>
         </div>
-
-        <!-- Stats Bar - BELOW EDIT PANEL ONLY -->
-        <div id="stats-bar" class="stats-bar" style="display: none;">
-            <div class="stats-row main-stats">
-                <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
-                <span>|</span>
-                <span><strong><span id="word-count">0</span></strong> <span class="stat-label" data-lang-key="words">λέξεις</span></span>
-                <span>|</span>
-                <span><strong><span id="para-count">0</span></strong> <span class="stat-label" data-lang-key="paragraphs">παράγραφοι</span></span>
-            </div>
-            <div class="stats-row meta-stats">
-                <span><strong>⏱️ <span id="reading-time">0</span> λεπτά</strong> <span class="stat-label">ανάγνωση</span></span>
-                <span style="margin: 0 8px;">|</span>
-                <span><strong>📍 Γρ: <span id="cursor-line">1</span> | Στλ: <span id="cursor-col">1</span></strong></span>
-            </div>
-        </div>
     </main>
 
-    <!-- Footer - Clickable Name, Fixed Colors -->
+    <!-- Stats Bar - BELOW MAIN CONTAINER, NOT INSIDE IT -->
+    <div id="stats-bar" class="stats-bar">
+        <div class="stats-row main-stats">
+            <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
+            <span>|</span>
+            <span><strong><span id="word-count">0</span></strong> <span class="stat-label" data-lang-key="words">λέξεις</span></span>
+            <span>|</span>
+            <span><strong><span id="para-count">0</span></strong> <span class="stat-label" data-lang-key="paragraphs">παράγραφοι</span></span>
+        </div>
+        <div class="stats-row meta-stats">
+            <span><strong>⏱️ <span id="reading-time">0</span> λεπτά</strong> <span class="stat-label">ανάγνωση</span></span>
+            <span style="margin: 0 8px;">|</span>
+            <span><strong>📍 Γρ: <span id="cursor-line">1</span> | Στλ: <span id="cursor-col">1</span></strong></span>
+        </div>
+    </div>
+
+    <!-- Footer -->
     <footer class="footer">
         <div class="footer-main">
             <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer" class="designer-link">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
