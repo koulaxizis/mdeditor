@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Μινιμαλιστικός επεξεργαστής Markdown - Χρήστος Κουλαξίζης</title>
     
-    <!-- No Google Fonts -->
     <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="style.css">
     
-    <meta name="description" content="Minimal Markdown Editor">
+    <meta name="description" content="Minimal Markdown Editor - No tracking, no ads, open source">
     <meta name="keywords" content="markdown, editor, open-source, privacy, minimal">
 </head>
 <body class="theme-light">
@@ -60,12 +59,13 @@
             </label>
         </div>
 
-        <!-- Format Bar (Updated with Strikethrough) -->
+        <!-- Format Bar with NEW Word Wrap Toggle -->
         <div class="format-bar" id="format-bar">
              <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
              <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
-             <!-- NEW: Strikethrough instead of Underline -->
              <button class="fmt-btn" title="Strikethrough" onclick="insertFormat('~~')">S̶</button>
+             <!-- NEW: Word Wrap Toggle Button -->
+             <button class="fmt-btn" id="word-wrap-toggle" title="Toggle Word Wrap">W</button> 
              <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
              <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
              <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
@@ -94,7 +94,7 @@
             <div id="preview-content" class="preview-wrapper"></div>
         </div>
 
-        <!-- RESTRUCTURED STATS BAR (2 LINES) -->
+        <!-- Stats Bar (2 Lines) -->
         <div id="stats-bar" class="stats-bar">
             <div class="stats-row main-stats">
                 <span><strong><span id="char-count">0</span></strong> <span class="stat-label" data-lang-key="chars">χαρακτήρες</span></span>
@@ -105,7 +105,7 @@
             </div>
             <div class="stats-row meta-stats">
                 <span><strong>⏱️ <span id="reading-time">0</span> λεπτά</strong> <span class="stat-label">ανάγνωση</span></span>
-                <span>|</span>
+                <span style="margin: 0 8px;">|</span>
                 <span><strong>📍 Γρ: <span id="cursor-line">1</span> | Στλ: <span id="cursor-col">1</span></strong></span>
             </div>
         </div>
@@ -115,18 +115,14 @@
     <footer class="footer">
         <div class="footer-main">
             <a href="https://koulaxizis.gr" target="_blank" rel="noopener noreferrer">Σχεδιασμός: Χρήστος Κουλαξίζης</a>
-            <!-- Moved Version Info here -->
             <span id="version-info" class="version-badge"></span>
         </div>
-        <div class="footer-sub">
-            <span>No cookies • No tracking • No ads • No Sponsors</span>
-        </div>
+        <div class="footer-sub"><span>No cookies • No tracking • No ads • No Sponsors</span></div>
         <div class="footer-legal">
             <span>Licensed under MIT</span> • <span>Open Source</span> • <span>Privacy First</span> • <span>Minimal Design</span>
-            <!-- Removed version-info from here -->
         </div>
     </footer>
-	
+
     <!-- Cheatsheet Modal -->
     <div id="cheatsheet-modal" class="modal hidden">
         <div class="modal-content">
@@ -142,6 +138,9 @@
     <div id="focus-toast" class="focus-toast hidden">
         <span>ESC για επαναφορά σε πλήρη προβολή</span>
     </div>
+
+    <!-- NEW: Global Toast Container -->
+    <div id="toast-container"></div>
 
     <script src="script.js"></script>
 </body>

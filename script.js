@@ -8,88 +8,58 @@ const STATS_KEY = 'lumo-editor-stats-mode';
 const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 
 // VERSION CONFIGURATION
-const APP_VERSION = "1.0.4";
+const APP_VERSION = "1.0.5";
 const LAST_UPDATE_DATE = "11/06/2026";
 
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = false;
+let wordWrapEnabled = true; // Default: On
 const WORDS_PER_MINUTE = 200;
 
-// =============================================
-// TRANSLATIONS
-// =============================================
+// Translations
 const translations = {
     el: {
         pageTitle: 'Μινιμαλιστικός επεξεργαστής Markdown',
-        editMode: 'Επεξεργασία',
-        previewMode: 'Προεπισκόπηση',
-        splitMode: 'Διπλό Panel',
-        liveMode: '👁️ Live',
-        focusMode: '⦿ Focus',
-        exportMD: 'MD',
-        exportTXT: 'TXT',
-        exportPDF: 'PDF',
-        exportHTML: 'HTML',
-        openFile: 'Άνοιγμα',
-        cheatSheetTitle: 'Cheat Sheet Markdown',
-        chars: 'χαρακτήρες',
-        words: 'λέξεις',
-        paragraphs: 'παράγραφοι',
-        readingTime: 'ανάγνωση',
-        cleanStats: 'MD Clean',
-        autoClose: 'Auto-Close',
-        basic: 'Βασικά',
-        advanced: 'Προχωρημένα',
-        closeTip: 'Κλείσιμο',
-        shortcuts: 'Συντομεύσεις Πληκτρολογίου',
-        exitMode: 'Έξοδος Λειτουργίας',
-        fullGuide: 'Πλήρης Οδηγός Markdown',
-        commonmark: 'CommonMark Spec',
-        mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα μορφοποίησης κειμένου, που δημιουργήθηκε από τον John Gruber το 2004.',
-        bold: 'Έντονο',
-        italic: 'Πλάγιο',
-        link: 'Σύνδεσμος',
-        list: 'Λίστα'
+        editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel',
+        liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
+        exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Άνοιγμα', cheatSheetTitle: 'Cheat Sheet Markdown',
+        chars: 'χαρακτήρες', words: 'λέξεις', paragraphs: 'παράγραφοι', readingTime: 'ανάγνωση',
+        cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Βασικά', advanced: 'Προχωρημένα',
+        closeTip: 'Κλείσιμο', shortcuts: 'Συντομεύσεις Πληκτρολογίου', exitMode: 'Έξοδος Λειτουργίας',
+        fullGuide: 'Πλήρης Οδηγός Markdown', commonmark: 'CommonMark Spec', mdDesc: 'Η Markdown είναι μια ελαφριά γλώσσα.',
+        bold: 'Έντονο', italic: 'Πλάγιο', link: 'Σύνδεσμος', list: 'Λίστα', strikethrough: 'Διαγράμμιση',
+        toastSaved: 'Αυτόματη αποθήκευση ολοκληρώθηκε.',
+        toastExport: 'Εξαγωγή ως {type} ολοκληρώθηκε.',
+        toastError: 'Σφάλμα κατά τη διαδικασία.',
+        toastLoaded: 'Το αρχείο φορτώθηκε επιτυχώς.',
+        toastCopied: 'Το κείμενο αντιγράφηκε ως HTML.',
+        toastCleared: 'Το περιεχόμενο εκκαθαρίστηκε.',
+        ctxBold: 'Έντονο', ctxItalic: 'Πλάγιο', ctxStrike: 'Διαγράμμιση',
+        ctxLink: 'Σύνδεσμος', ctxCopyHTML: 'Αντιγραφή ως HTML', ctxCut: 'Αποκοπή', ctxCopy: 'Αντιγραφή', ctxPaste: 'Επικόλληση'
     },
     en: {
         pageTitle: 'Minimalist Markdown Editor',
-        editMode: 'Edit',
-        previewMode: 'Preview',
-        splitMode: 'Split View',
-        liveMode: '👁️ Live',
-        focusMode: '⦿ Focus',
-        exportMD: 'MD',
-        exportTXT: 'TXT',
-        exportPDF: 'PDF',
-        exportHTML: 'HTML',
-        openFile: 'Open',
-        cheatSheetTitle: 'Markdown Cheat Sheet',
-        chars: 'characters',
-        words: 'words',
-        paragraphs: 'paragraphs',
-        readingTime: 'reading time',
-        cleanStats: 'MD Clean',
-        autoClose: 'Auto-Close',
-        basic: 'Basics',
-        advanced: 'Advanced',
-        closeTip: 'Close',
-        shortcuts: 'Keyboard Shortcuts',
-        exitMode: 'Exit Mode',
-        fullGuide: 'Full Markdown Guide',
-        commonmark: 'CommonMark Spec',
-        mdDesc: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor.',
-        bold: 'Bold',
-        italic: 'Italic',
-        link: 'Link',
-        list: 'List'
+        editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View',
+        liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
+        exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Open', cheatSheetTitle: 'Markdown Cheat Sheet',
+        chars: 'characters', words: 'words', paragraphs: 'paragraphs', readingTime: 'reading time',
+        cleanStats: 'MD Clean', autoClose: 'Auto-Close', basic: 'Basics', advanced: 'Advanced',
+        closeTip: 'Close', shortcuts: 'Keyboard Shortcuts', exitMode: 'Exit Mode',
+        fullGuide: 'Full Markdown Guide', commonmark: 'CommonMark Spec', mdDesc: 'Markdown is a lightweight markup language.',
+        bold: 'Bold', italic: 'Italic', link: 'Link', list: 'List', strikethrough: 'Strikethrough',
+        toastSaved: 'Auto-save completed.',
+        toastExport: 'Export to {type} completed.',
+        toastError: 'An error occurred.',
+        toastLoaded: 'File loaded successfully.',
+        toastCopied: 'Text copied as HTML.',
+        toastCleared: 'Content cleared.',
+        ctxBold: 'Bold', ctxItalic: 'Italic', ctxStrike: 'Strikethrough',
+        ctxLink: 'Link', ctxCopyHTML: 'Copy as HTML', ctxCut: 'Cut', ctxCopy: 'Copy', ctxPaste: 'Paste'
     }
 };
 
-// =============================================
-// TIPS
-// =============================================
 const tips = {
     el: [
         '💡 Χρησιμοποίησε `#` για τίτλους (# H1, ## H2, ### H3)',
@@ -121,9 +91,7 @@ const tips = {
     ]
 };
 
-// =============================================
-// DOM ELEMENTS
-// =============================================
+// DOM Elements
 const editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
@@ -133,6 +101,7 @@ const tipBanner = document.getElementById('tip-banner');
 const tipText = document.getElementById('tip-text');
 const focusToast = document.getElementById('focus-toast');
 const fileInput = document.getElementById('file-input');
+const wordWrapBtn = document.getElementById('word-wrap-toggle');
 const langToggle = document.getElementById('lang-toggle');
 const themeToggle = document.getElementById('theme-toggle');
 const modeEdit = document.getElementById('mode-edit');
@@ -156,19 +125,48 @@ const paraCountEl = document.getElementById('para-count');
 const readingTimeEl = document.getElementById('reading-time');
 const cursorLineEl = document.getElementById('cursor-line');
 const cursorColEl = document.getElementById('cursor-col');
+const toastContainer = document.getElementById('toast-container');
+const versionInfo = document.getElementById('version-info');
+
+// =============================================
+// TOAST NOTIFICATION SYSTEM
+// =============================================
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = message;
+    
+    let icon = '';
+    if (type === 'success') icon = '✅';
+    else if (type === 'error') icon = '❌';
+    else if (type === 'warning') icon = '⚠️';
+    else icon = 'ℹ️';
+    
+    toast.innerHTML = `${icon} ${message}`;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 // =============================================
 // INITIALIZATION
 // =============================================
 function init() {
-    if (!editor || !pageTitle) {
-        console.error("Critical elements not found.");
-        return;
-    }
+    if (!editor || !pageTitle) { console.error("Critical elements not found."); return; }
 
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) editor.value = savedContent;
     
+    // Load settings
+    wordWrapEnabled = localStorage.getItem('word-wrap') !== 'false';
+    editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
+    if(wordWrapBtn) wordWrapBtn.classList.toggle('active', wordWrapEnabled);
+
     applyTheme(currentTheme);
     applyLanguage(currentLanguage);
     
@@ -185,13 +183,10 @@ function init() {
     updateStats();
     updateCursorPosition();
     
-    // Set Version Info in Footer
-    const versionEl = document.getElementById('version-info');
-    if (versionEl) {
-        versionEl.textContent = `V${APP_VERSION} | ${LAST_UPDATE_DATE}`;
-    }
+    if (versionInfo) versionInfo.textContent = `V${APP_VERSION} | ${LAST_UPDATE_DATE}`;
     
     setupEventListeners();
+    showToast(translations[currentLanguage].toastSaved, 'success');
 }
 
 // =============================================
@@ -199,10 +194,7 @@ function init() {
 // =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
-    if (localStorage.getItem('tip-closed') === 'true') {
-        tipBanner.classList.add('hidden');
-        return;
-    }
+    if (localStorage.getItem('tip-closed') === 'true') { tipBanner.classList.add('hidden'); return; }
     
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
@@ -215,17 +207,14 @@ function showStickyTip() {
         btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px; font-size:0.9rem;';
         btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
         btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.backgroundColor = 'transparent'; };
-        btn.onclick = () => {
-            tipBanner.classList.add('hidden');
-            localStorage.setItem('tip-closed', 'true');
-        };
+        btn.onclick = () => { tipBanner.classList.add('hidden'); localStorage.setItem('tip-closed', 'true'); };
         tipBanner.appendChild(btn);
     }
     tipBanner.classList.remove('hidden');
 }
 
 // =============================================
-// GLOBAL FORMAT FUNCTION (WITH STRIKETHROUGH)
+// GLOBAL FORMAT FUNCTION
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
@@ -276,7 +265,6 @@ window.insertFormat = function(format) {
         newCursorStart = startPos + format.length;
         newCursorEnd = newCursorStart;
     } else if (format === '~~') {
-        // Strikethrough logic
         newText = before + format + selected + format + after;
         newCursorStart = startPos + 2;
         newCursorEnd = newCursorStart + selected.length;
@@ -337,10 +325,21 @@ function setupEventListeners() {
         });
     }
 
-    if (exportMd) exportMd.addEventListener('click', () => downloadFile(editor.value, 'document.md', 'text/markdown'));
-    if (exportTxt) exportTxt.addEventListener('click', () => downloadFile(editor.value, 'document.txt', 'text/plain'));
-    if (exportPdf) exportPdf.addEventListener('click', () => window.print());
-    if (exportHtml) exportHtml.addEventListener('click', exportAsHTML);
+    // Word Wrap Toggle
+    if (wordWrapBtn) {
+        wordWrapBtn.addEventListener('click', () => {
+            wordWrapEnabled = !wordWrapEnabled;
+            editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
+            wordWrapBtn.classList.toggle('active', wordWrapEnabled);
+            localStorage.setItem('word-wrap', wordWrapEnabled);
+            showToast(wordWrapEnabled ? 'Word Wrap: ON' : 'Word Wrap: OFF', 'info');
+        });
+    }
+
+    if (exportMd) exportMd.addEventListener('click', () => { downloadFile(editor.value, 'document.md', 'text/markdown'); showToast(translations[currentLanguage].toastExport.replace('{type}', 'MD'), 'success'); });
+    if (exportTxt) exportTxt.addEventListener('click', () => { downloadFile(editor.value, 'document.txt', 'text/plain'); showToast(translations[currentLanguage].toastExport.replace('{type}', 'TXT'), 'success'); });
+    if (exportPdf) exportPdf.addEventListener('click', () => { window.print(); showToast('PDF Print Dialog Opened', 'info'); });
+    if (exportHtml) exportHtml.addEventListener('click', () => { exportAsHTML(); showToast(translations[currentLanguage].toastExport.replace('{type}', 'HTML'), 'success'); });
 
     if (openFileBtn) openFileBtn.addEventListener('click', () => { if (fileInput) fileInput.click(); });
     if (fileInput) fileInput.addEventListener('change', handleFileOpen);
@@ -370,6 +369,7 @@ function setupEventListeners() {
                 updateStats();
                 updateCursorPosition();
                 editor.focus();
+                showToast(translations[currentLanguage].toastCleared, 'warning');
             }
         });
     }
@@ -404,6 +404,47 @@ function setupEventListeners() {
     });
 
     // ============================================
+    // CUSTOM CONTEXT MENU
+    // ============================================
+    editor.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        
+        const t = translations[currentLanguage];
+        const menuHTML = `
+            <div class="custom-context-menu" style="position:fixed; top:${e.clientY}px; left:${e.clientX}px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.2); min-width:180px; z-index:9999; overflow:hidden;">
+                <div class="ctx-item" onclick="insertFormat('**')"><span>🔶</span> ${t.ctxBold}</div>
+                <div class="ctx-item" onclick="insertFormat('*')"><span>🔸</span> ${t.ctxItalic}</div>
+                <div class="ctx-item" onclick="insertFormat('~~')"><span>❌</span> ${t.ctxStrike}</div>
+                <div class="ctx-item" onclick="insertFormat('[link](url)')"><span>🔗</span> ${t.ctxLink}</div>
+                <div class="ctx-divider"></div>
+                <div class="ctx-item" onclick="copyAsHTML()"><span>📋</span> ${t.ctxCopyHTML}</div>
+                <div class="ctx-divider"></div>
+                <div class="ctx-item" onclick="execCmd('cut')"><span>✂️</span> ${t.ctxCut}</div>
+                <div class="ctx-item" onclick="execCmd('copy')"><span>📋</span> ${t.ctxCopy}</div>
+                <div class="ctx-item" onclick="execCmd('paste')"><span>粘贴</span> ${t.ctxPaste}</div>
+            </div>
+        `;
+        
+        // Remove existing context menus
+        const existingMenu = document.querySelector('.custom-context-menu');
+        if (existingMenu) existingMenu.remove();
+        
+        // Add new menu
+        const menu = document.createElement('div');
+        menu.innerHTML = menuHTML;
+        document.body.appendChild(menu);
+        
+        // Close on click outside
+        const closeMenu = () => {
+            if (document.querySelector('.custom-context-menu')) {
+                document.querySelector('.custom-context-menu').remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeMenu), 10);
+    });
+
+    // ============================================
     // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
     // ============================================
     if (editor) {
@@ -416,31 +457,26 @@ function setupEventListeners() {
             
             const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
             
-            // Special case: asterisk -> **
             if (e.key === '*') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
-                // CRITICAL: Set cursor EXACTLY after first asterisk
                 editor.selectionStart = editor.selectionEnd = pos + 1;
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
             
-            // Special case: underscore -> __
             if (e.key === '_') {
                 e.preventDefault();
                 const pos = editor.selectionStart;
                 const sel = editor.value.substring(pos, editor.selectionEnd);
                 editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-                // CRITICAL: Set cursor EXACTLY after first underscore
                 editor.selectionStart = editor.selectionEnd = pos + 1;
                 editor.dispatchEvent(new Event('input'));
                 return;
             }
             
-            // Regular pairs
             if (pairs[e.key]) {
                 e.preventDefault();
                 const pos = editor.selectionStart;
@@ -455,8 +491,21 @@ function setupEventListeners() {
 }
 
 // =============================================
-// HELPERS & FEATURES
+// HELPER FUNCTIONS
 // =============================================
+function copyAsHTML() {
+    const htmlContent = marked.parse(editor.value);
+    navigator.clipboard.writeText(htmlContent).then(() => {
+        showToast(translations[currentLanguage].toastCopied, 'success');
+    }).catch(err => {
+        showToast(translations[currentLanguage].toastError, 'error');
+    });
+}
+
+function execCmd(cmd) {
+    document.execCommand(cmd);
+}
+
 function exportAsHTML() {
     const markdown = editor.value;
     const htmlContent = marked.parse(markdown);
@@ -493,8 +542,9 @@ function handleFileOpen(e) {
         updateStats();
         updateCursorPosition();
         fileInput.value = '';
+        showToast(translations[currentLanguage].toastLoaded, 'success');
     };
-    reader.onerror = () => alert('Σφάλμα κατά την ανάγνωση του αρχείου!');
+    reader.onerror = () => showToast(translations[currentLanguage].toastError, 'error');
     reader.readAsText(file);
 }
 
@@ -688,7 +738,6 @@ function updateStats() {
         p = text.split(/\n\s*\n/).filter(x => x.trim().length > 0).length;
     }
     
-    // Calculate reading time (0 if no words, otherwise ceil)
     readingMins = w === 0 ? 0 : Math.ceil(w / WORDS_PER_MINUTE);
     
     if (charCountEl) charCountEl.textContent = c.toLocaleString();

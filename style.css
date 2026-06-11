@@ -1019,6 +1019,155 @@ body.focus-mode.live-mode #preview-panel {
 }
 
 /* =============================================
+   RESTRUCTURED STATS BAR (FIXED LAYOUT)
+   ============================================= */
+.stats-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0.6rem 1.2rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    min-height: 60px;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.main-stats { font-weight: 600; color: var(--text-primary); }
+.meta-stats { font-weight: 500; color: var(--text-secondary); font-size: 0.8rem; opacity: 0.9; }
+
+.stats-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap; /* CRITICAL FIX */
+}
+
+.stats-row strong {
+    color: var(--accent-color);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+#cursor-line, #cursor-col {
+    font-family: monospace;
+    font-variant-numeric: tabular-nums;
+    min-width: 1ch;
+    text-align: right;
+}
+
+/* =============================================
+   TOAST NOTIFICATIONS
+   ============================================= */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    max-width: 300px;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* =============================================
+   CUSTOM CONTEXT MENU
+   ============================================= */
+.custom-context-menu {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    min-width: 180px;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.ctx-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.ctx-item:hover {
+    background: var(--hover-bg);
+}
+
+.ctx-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+/* =============================================
+   FOOTER & VERSION
+   ============================================= */
+.footer-main {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.version-badge {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.theme-dark .version-badge {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.version-badge:hover {
+    opacity: 1;
+    border-color: var(--accent-color);
+}
+
+/* Fix for formatting button active state */
+.fmt-btn.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+/* =============================================
    RESPONSIVE
    ============================================= */
 @media (max-width: 768px) {
