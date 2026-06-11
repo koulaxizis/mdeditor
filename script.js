@@ -8,7 +8,6 @@ const STATS_KEY = 'lumo-editor-stats-mode';
 const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 const WRAP_KEY = 'lumo-editor-word-wrap';
 
-// VERSION CONFIGURATION
 const APP_VERSION = "1.0.7";
 const LAST_UPDATE_DATE = "11/06/2026";
 
@@ -17,14 +16,12 @@ let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = false;
 let wordWrapEnabled = true;
-let currentViewMode = 'split'; // Track view mode
+let currentViewMode = 'split';
 const WORDS_PER_MINUTE = 200;
 
-// Translations - COMPLETE FOR BOTH LANGUAGES
 const translations = {
     el: {
-        pageTitle: 'Επεξεργαστής Markdown',
-        editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel',
+        pageTitle: 'Επεξεργαστής Markdown', editMode: 'Επεξεργασία', previewMode: 'Προεπισκόπηση', splitMode: 'Διπλό Panel',
         liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
         exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Άνοιγμα', cheatSheetTitle: 'Cheat Sheet Markdown',
         chars: 'χαρακτήρες', words: 'λέξεις', paragraphs: 'παράγραφοι', readingTime: 'ανάγνωση',
@@ -44,8 +41,7 @@ const translations = {
         ctxLink: 'Σύνδεσμος', ctxCopyHTML: 'Αντιγραφή ως HTML', ctxCut: 'Αποκοπή', ctxCopy: 'Αντιγραφή', ctxPaste: 'Επικόλληση'
     },
     en: {
-        pageTitle: 'Markdown Editor',
-        editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View',
+        pageTitle: 'Markdown Editor', editMode: 'Edit', previewMode: 'Preview', splitMode: 'Split View',
         liveMode: '👁️ Live', focusMode: '⦿ Focus', exportMD: 'MD', exportTXT: 'TXT',
         exportPDF: 'PDF', exportHTML: 'HTML', openFile: 'Open', cheatSheetTitle: 'Markdown Cheat Sheet',
         chars: 'characters', words: 'words', paragraphs: 'paragraphs', readingTime: 'reading time',
@@ -97,7 +93,7 @@ const tips = {
     ]
 };
 
-// DOM Elements
+// DOM Elements (Safe Selection)
 const editor = document.getElementById('editor');
 const preview = document.getElementById('preview-content');
 const pageBody = document.body;
@@ -141,8 +137,6 @@ const versionInfo = document.getElementById('version-info');
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.innerHTML = message;
-    
     let icon = '';
     if (type === 'success') icon = '✅';
     else if (type === 'error') icon = '❌';
@@ -151,7 +145,6 @@ function showToast(message, type = 'info') {
     
     toast.innerHTML = `${icon} ${message}`;
     toastContainer.appendChild(toast);
-    
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
@@ -168,7 +161,6 @@ function init() {
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) editor.value = savedContent;
     
-    // Load settings
     wordWrapEnabled = localStorage.getItem(WRAP_KEY) !== 'false';
     editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
     if(wordWrapBtn) wordWrapBtn.classList.toggle('active', wordWrapEnabled);
@@ -184,7 +176,7 @@ function init() {
     if (autoCloseToggle) autoCloseToggle.checked = autoCloseEnabled;
     
     showStickyTip();
-    setViewMode('split'); // Initialize with split view
+    setViewMode('split');
     updatePreview();
     updateStats();
     updateCursorPosition();
@@ -195,9 +187,6 @@ function init() {
     showToast(translations[currentLanguage].toastSaved, 'success');
 }
 
-// =============================================
-// STICKY TIP
-// =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
     if (localStorage.getItem('tip-closed') === 'true') { tipBanner.classList.add('hidden'); return; }
@@ -211,8 +200,6 @@ function showStickyTip() {
         btn.textContent = '✕';
         btn.className = 'close-tip-btn';
         btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px; font-size:0.9rem;';
-        btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
-        btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.backgroundColor = 'transparent'; };
         btn.onclick = () => { tipBanner.classList.add('hidden'); localStorage.setItem('tip-closed', 'true'); };
         tipBanner.appendChild(btn);
     }
@@ -220,10 +207,12 @@ function showStickyTip() {
 }
 
 // =============================================
-// GLOBAL FORMAT FUNCTION
+// GLOBAL FORMAT FUNCTION (FIXED)
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
+    e.preventDefault ? null : null; // Safe guard
+    
     const startPos = editor.selectionStart;
     const endPos = editor.selectionEnd;
     const text = editor.value;
@@ -247,17 +236,13 @@ window.insertFormat = function(format) {
             newCursorEnd = newCursorStart + selected.length;
         }
     } else if (format === '1. ') {
-        // NUMBERED LIST AUTO-INCREMENT WITH PROPER PATTERN
-        e.preventDefault ? null : null; // Placeholder for preventDefault context
         const lines = before.split('\n');
         const lastLine = lines[lines.length - 1];
-        const numMatch = /^\s*(\d+)\.\s*/.exec(lastLine);
+        const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
         let nextNum = 1;
-        
         if (numMatch) {
             nextNum = parseInt(numMatch[1]) + 1;
         }
-        
         newText = before + `\n${nextNum}. ` + selected + after;
         newCursorStart = startPos + 3;
         newCursorEnd = newCursorStart + selected.length;
@@ -315,7 +300,6 @@ function handleEditorKeydown(e) {
         const lines = textUpToCursor.split('\n');
         const lastLine = lines[lines.length - 1];
         
-        // Check if previous line starts with number pattern (1. ) - NO CHAR AFTER PERIOD
         const numMatch = /^\s*(\d+)\.\s*$/.exec(lastLine);
         if (numMatch) {
             e.preventDefault();
@@ -327,7 +311,6 @@ function handleEditorKeydown(e) {
             return;
         }
         
-        // Also check for bullet list (- or *)
         const bulletMatch = /^\s*[-*]\s*$/.exec(lastLine);
         if (bulletMatch) {
             e.preventDefault();
@@ -346,29 +329,235 @@ function handleEditorKeydown(e) {
 function setViewMode(mode) {
     currentViewMode = mode;
     pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing', 'read-only');
+    
     [modeEdit, modeLive, modePreview, modeSplit].forEach(m => m?.classList.remove('active'));
     
     switch (mode) {
         case 'edit': 
             pageBody.classList.add('edit-only'); 
-            modeEdit?.classList.add('active');
-            statsBar.style.display = 'flex';
+            if(modeEdit) modeEdit.classList.add('active');
+            if(statsBar) statsBar.style.display = 'flex';
             break;
         case 'live': 
             pageBody.classList.add('live-mode'); 
-            modeLive?.classList.add('active');
-            statsBar.style.display = 'flex';
+            if(modeLive) modeLive.classList.add('active');
+            if(statsBar) statsBar.style.display = 'flex';
             break;
         case 'preview': 
             pageBody.classList.add('preview-only', 'read-only'); 
-            modePreview?.classList.add('active');
-            statsBar.style.display = 'none'; // Hide stats in preview
+            if(modePreview) modePreview.classList.add('active');
+            if(statsBar) statsBar.style.display = 'none';
             break;
         default: // split
             pageBody.classList.add('split-mode'); 
-            modeSplit?.classList.add('active');
-            statsBar.style.display = 'flex';
+            if(modeSplit) modeSplit.classList.add('active');
+            if(statsBar) statsBar.style.display = 'flex';
             break;
+    }
+}
+
+// =============================================
+// EVENT LISTENERS (CRITICAL FIX: All added here)
+// =============================================
+function setupEventListeners() {
+    if (!editor) return;
+
+    editor.addEventListener('input', () => {
+        localStorage.setItem(STORAGE_KEY, editor.value);
+        updatePreview();
+        updateStats();
+        updateCursorPosition();
+    });
+    
+    editor.addEventListener('keydown', handleEditorKeydown);
+    editor.addEventListener('keyup', updateCursorPosition);
+    editor.addEventListener('click', updateCursorPosition);
+
+    if (themeToggle) themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
+    if (langToggle) langToggle.addEventListener('click', () => applyLanguage(currentLanguage === 'el' ? 'en' : 'el'));
+    
+    if (modeEdit) modeEdit.addEventListener('click', () => setViewMode('edit'));
+    if (modeLive) modeLive.addEventListener('click', () => setViewMode('live'));
+    if (modePreview) modePreview.addEventListener('click', () => setViewMode('preview'));
+    if (modeSplit) modeSplit.addEventListener('click', () => setViewMode('split'));
+    
+    if (modeFocus) modeFocus.addEventListener('click', () => {
+        toggleFocusMode();
+        if (pageBody.classList.contains('focus-mode')) showFocusToast();
+    });
+    
+    if (mdStatsToggle) mdStatsToggle.addEventListener('change', e => {
+        currentStatsMode = e.target.checked ? 'md-clean' : 'raw';
+        localStorage.setItem(STATS_KEY, currentStatsMode);
+        updateStats();
+    });
+    
+    if (autoCloseToggle) {
+        autoCloseToggle.checked = autoCloseEnabled;
+        autoCloseToggle.addEventListener('change', e => {
+            autoCloseEnabled = e.target.checked;
+            localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
+        });
+    }
+
+    if (wordWrapBtn) {
+        wordWrapBtn.addEventListener('click', () => {
+            wordWrapEnabled = !wordWrapEnabled;
+            editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
+            wordWrapBtn.classList.toggle('active', wordWrapEnabled);
+            localStorage.setItem(WRAP_KEY, wordWrapEnabled);
+            showToast(wordWrapEnabled ? 'Word Wrap: ON' : 'Word Wrap: OFF', 'info');
+        });
+    }
+
+    if (exportMd) exportMd.addEventListener('click', () => { downloadFile(editor.value, 'document.md', 'text/markdown'); showToast(translations[currentLanguage].toastExportMD, 'success'); });
+    if (exportTxt) exportTxt.addEventListener('click', () => { downloadFile(editor.value, 'document.txt', 'text/plain'); showToast(translations[currentLanguage].toastExportTXT, 'success'); });
+    if (exportPdf) exportPdf.addEventListener('click', () => { window.print(); showToast(currentLanguage === 'el' ? 'Παράθυρο Εκτύπωσης' : 'Print Dialog', 'info'); });
+    if (exportHtml) exportHtml.addEventListener('click', () => { exportAsHTML(); showToast(translations[currentLanguage].toastExportHTML, 'success'); });
+
+    if (openFileBtn) openFileBtn.addEventListener('click', () => { if (fileInput) fileInput.click(); });
+    if (fileInput) fileInput.addEventListener('change', handleFileOpen);
+
+    if (cheatsheetBtn) cheatsheetBtn.addEventListener('click', () => { populateCheatsheet(); if(cheatsheetModal) cheatsheetModal.classList.remove('hidden'); });
+    if (closeCheatsheet) closeCheatsheet.addEventListener('click', () => { if(cheatsheetModal) cheatsheetModal.classList.add('hidden'); });
+    if (cheatsheetModal) cheatsheetModal.addEventListener('click', e => { if (e.target === cheatsheetModal) cheatsheetModal.classList.add('hidden'); });
+
+    if (preview?.parentElement) {
+        preview.parentElement.addEventListener('click', e => {
+            if (currentViewMode === 'live' && !pageBody.classList.contains('live-editing') && !e.target.closest('.toolbar') && !e.target.closest('.top-bar')) {
+                e.stopPropagation();
+                pageBody.classList.add('live-editing');
+                editor.focus();
+                editor.selectionStart = editor.selectionEnd = editor.value.length;
+            }
+        });
+    }
+
+    const clearBtn = document.getElementById('clear-content-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Είστε σίγουροι ότι θέλετε να εκκαθαρίσετε όλο το περιεχόμενο;')) {
+                editor.value = '';
+                localStorage.setItem(STORAGE_KEY, '');
+                updatePreview();
+                updateStats();
+                updateCursorPosition();
+                editor.focus();
+                showToast(translations[currentLanguage].toastCleared, 'warning');
+            }
+        });
+    }
+
+    document.addEventListener('keydown', e => {
+        const isEditorActive = document.activeElement === editor;
+        
+        if (e.key === 'Escape') {
+            if (pageBody.classList.contains('focus-mode')) {
+                toggleFocusMode();
+                clearTimeout(window.focusToastTimer);
+                if (focusToast) { focusToast.classList.remove('show'); setTimeout(() => focusToast.classList.add('hidden'), 300); }
+            }
+            if (pageBody.classList.contains('live-mode') && pageBody.classList.contains('live-editing')) {
+                pageBody.classList.remove('live-editing');
+                e.preventDefault();
+            }
+            if (cheatsheetModal && !cheatsheetModal.classList.contains('hidden')) {
+                cheatsheetModal.classList.add('hidden');
+                e.preventDefault();
+            }
+        }
+
+        if (isEditorActive && (e.ctrlKey || e.metaKey)) {
+            const key = e.key.toLowerCase();
+            if (key === 'b') { e.preventDefault(); insertFormat('**'); }
+            else if (key === 'i') { e.preventDefault(); insertFormat('*'); }
+            else if (key === 'k') { e.preventDefault(); insertFormat('[link](https://example.com)'); }
+            else if (key === 'h') { e.preventDefault(); insertFormat('# '); }
+            else if (key === 'l') { e.preventDefault(); insertFormat('- '); }
+        }
+    });
+
+    // ============================================
+    // CUSTOM CONTEXT MENU
+    // ============================================
+    editor.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        
+        const t = translations[currentLanguage];
+        const menuHTML = `
+            <div class="custom-context-menu" style="position:fixed; top:${e.clientY}px; left:${e.clientX}px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.2); min-width:180px; z-index:9999; overflow:hidden;">
+                <div class="ctx-item" onclick="insertFormat('**')"><span>🔶</span> ${t.ctxBold}</div>
+                <div class="ctx-item" onclick="insertFormat('*')"><span>🔸</span> ${t.ctxItalic}</div>
+                <div class="ctx-item" onclick="insertFormat('~~')"><span>❌</span> ${t.ctxStrike}</div>
+                <div class="ctx-item" onclick="insertFormat('[link](url)')"><span>🔗</span> ${t.ctxLink}</div>
+                <div class="ctx-divider"></div>
+                <div class="ctx-item" onclick="copyAsHTML()"><span>📋</span> ${t.ctxCopyHTML}</div>
+                <div class="ctx-divider"></div>
+                <div class="ctx-item" onclick="execCmd('cut')"><span>✂️</span> ${t.ctxCut}</div>
+                <div class="ctx-item" onclick="execCmd('copy')"><span>📋</span> ${t.ctxCopy}</div>
+                <div class="ctx-item" onclick="execCmd('paste')"><span>📋</span> ${t.ctxPaste}</div>
+            </div>
+        `;
+        
+        const existingMenu = document.querySelector('.custom-context-menu');
+        if (existingMenu) existingMenu.remove();
+        
+        const menu = document.createElement('div');
+        menu.innerHTML = menuHTML;
+        document.body.appendChild(menu);
+        
+        const closeMenu = () => {
+            if (document.querySelector('.custom-context-menu')) {
+                document.querySelector('.custom-context-menu').remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeMenu), 10);
+    });
+
+    // ============================================
+    // AUTO-CLOSE BRACKETS (FIXED CURSOR POSITION)
+    // ============================================
+    if (editor) {
+        editor.addEventListener('keydown', function(e) {
+            if (!autoCloseEnabled) return;
+            
+            const isSpecialChar = ['_', '*'].includes(e.key);
+            if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
+            if (typeof e.key !== 'string' || e.key.length !== 1) return;
+            
+            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+            
+            if (e.key === '*') {
+                e.preventDefault();
+                const pos = editor.selectionStart;
+                const sel = editor.value.substring(pos, editor.selectionEnd);
+                editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
+                editor.selectionStart = editor.selectionEnd = pos + 2;
+                editor.dispatchEvent(new Event('input'));
+                return;
+            }
+            
+            if (e.key === '_') {
+                e.preventDefault();
+                const pos = editor.selectionStart;
+                const sel = editor.value.substring(pos, editor.selectionEnd);
+                editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
+                editor.selectionStart = editor.selectionEnd = pos + 2;
+                editor.dispatchEvent(new Event('input'));
+                return;
+            }
+            
+            if (pairs[e.key]) {
+                e.preventDefault();
+                const pos = editor.selectionStart;
+                const sel = editor.value.substring(pos, editor.selectionEnd);
+                editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'end');
+                editor.selectionStart = editor.selectionEnd = pos + 1;
+                editor.dispatchEvent(new Event('input'));
+                return;
+            }
+        });
     }
 }
 
@@ -479,11 +668,11 @@ function applyLanguage(lang) {
 
 function toggleFocusMode() {
     pageBody.classList.toggle('focus-mode');
-    modeFocus?.classList.toggle('active');
+    if(modeFocus) modeFocus.classList.toggle('active');
 }
 
 function updatePreview() {
-    preview.innerHTML = typeof marked !== 'undefined' ? marked.parse(editor.value) : '<p style="color:red">Error</p>';
+    if(preview) preview.innerHTML = typeof marked !== 'undefined' ? marked.parse(editor.value) : '<p style="color:red">Error</p>';
 }
 
 function downloadFile(content, filename, mimeType) {
