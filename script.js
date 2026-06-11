@@ -10,7 +10,7 @@ const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
-let autoCloseEnabled = false; // Default value, will be set in init()
+let autoCloseEnabled = false;
 
 // Translations Object
 const translations = {
@@ -161,7 +161,7 @@ function init() {
     if (currentStatsMode === 'md-clean' && mdStatsToggle) mdStatsToggle.checked = true;
     else if (mdStatsToggle) mdStatsToggle.checked = false;
     
-    // FIX: Load Auto-Close state from localStorage FIRST
+    // Load Auto-Close state
     const savedAutoClose = localStorage.getItem(AUTO_CLOSE_KEY);
     autoCloseEnabled = (savedAutoClose === 'true');
     
@@ -170,7 +170,7 @@ function init() {
         console.log("✓ Initial Auto-Close state loaded:", autoCloseEnabled);
     }
     
-    showStickyTip();
+    showStickyTip(); // Ensure this runs
     setViewMode('split');
     updatePreview();
     updateStats();
@@ -179,24 +179,30 @@ function init() {
 }
 
 // =============================================
-// STICKY TIP
+// STICKY TIP (FIXED TO ALWAYS SHOW ON FIRST LOAD IF NOT CLOSED)
 // =============================================
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
-    if (localStorage.getItem('tip-closed') === 'true') {
+    
+    // Check if user has explicitly closed it before
+    const wasClosed = localStorage.getItem('tip-closed');
+    
+    if (wasClosed === 'true') {
         tipBanner.classList.add('hidden');
         return;
     }
     
+    // Show random tip
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
     tipText.textContent = tipsForLang[randomIndex];
     
+    // Create close button if not exists
     if (!document.querySelector('.close-tip-btn')) {
         const btn = document.createElement('span');
         btn.textContent = '✕';
         btn.className = 'close-tip-btn';
-        btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px;';
+        btn.style.cssText = 'margin-left:15px; cursor:pointer; font-weight:bold; opacity:0.8; padding:2px 6px; border-radius:4px; font-size: 0.9rem;';
         btn.onmouseover = () => { btn.style.opacity = '1'; btn.style.backgroundColor = 'rgba(255,255,255,0.2)'; };
         btn.onmouseout = () => { btn.style.opacity = '0.8'; btn.style.backgroundColor = 'transparent'; };
         btn.onclick = () => {
@@ -205,7 +211,9 @@ function showStickyTip() {
         };
         tipBanner.appendChild(btn);
     }
+    
     tipBanner.classList.remove('hidden');
+    console.log("✓ Sticky Tip displayed");
 }
 
 // =============================================
@@ -223,7 +231,6 @@ window.insertFormat = function(format) {
     
     let newText, newCursorStart, newCursorEnd;
     
-    // FIX: Corrected List format (was '- -', now '- ')
     if (format === '- ') {
         const lines = before.split('\n');
         const lastLine = lines[lines.length - 1];
@@ -313,11 +320,9 @@ function setupEventListeners() {
         updateStats();
     });
     
-    // --- AUTO-CLOSE TOGGLE (CRITICAL FIX) ---
+    // --- AUTO-CLOSE TOGGLE ---
     if (autoCloseToggle) {
-        // Ensure state is synced on load (already done in init, but double-check here)
         autoCloseToggle.checked = autoCloseEnabled;
-        
         autoCloseToggle.addEventListener('change', e => {
             autoCloseEnabled = e.target.checked;
             localStorage.setItem(AUTO_CLOSE_KEY, autoCloseEnabled);
@@ -392,7 +397,7 @@ function setupEventListeners() {
     });
 
     // ============================================
-    // AUTO-CLOSE BRACKETS (COMPLETELY REWRITTEN)
+    // AUTO-CLOSE BRACKETS (FIXED SHIFT KEY ISSUE)
     // ============================================
     if (editor) {
         editor.addEventListener('keydown', function(e) {
@@ -411,9 +416,12 @@ function setupEventListeners() {
                 return;
             }
             
-            // Check 2: No modifier keys (Shift, Ctrl, etc.)
-            if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) {
-                console.log("❌ Modifier key pressed");
+            // Check 2: No modifier keys EXCEPT Shift (if the key itself requires it like _)
+            // We allow Shift ONLY if the key is one of our special pairs ( _ , * ) because they often require shift on some layouts.
+            const isSpecialChar = ['_', '*'].includes(e.key);
+            
+            if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) {
+                console.log("❌ Modifier key pressed (or unexpected shift)");
                 return;
             }
             
