@@ -427,9 +427,7 @@ function setupEventListeners() {
             if (confirm('Είστε σίγουροι ότι θέλετε να εκκαθαρίσετε όλο το περιεχόμενο;')) {
                 editor.value = '';
                 localStorage.setItem(STORAGE_KEY, '');
-                updatePreview();
-                updateStats();
-                updateCursorPosition();
+                updatePreview(); updateStats(); updateCursorPosition();
                 editor.focus();
                 showToast(translations[currentLanguage].toastCleared, 'warning');
             }
@@ -493,13 +491,19 @@ function setupEventListeners() {
         setTimeout(() => document.addEventListener('click', closeMenu), 10);
     });
 
-    // Auto-Close Brackets
+    // ============================================
+    // AUTO-CLOSE BRACKETS (FIXED: Single Underscore)
+    // ============================================
     editor.addEventListener('keydown', function(e) {
         if (!autoCloseEnabled) return;
+        
         const isSpecialChar = ['_', '*'].includes(e.key);
         if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
         if (typeof e.key !== 'string' || e.key.length !== 1) return;
+        
         const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+        
+        // Bold with * (Double Asterisks)
         if (e.key === '*') {
             e.preventDefault();
             const pos = editor.selectionStart;
@@ -509,15 +513,19 @@ function setupEventListeners() {
             editor.dispatchEvent(new Event('input'));
             return;
         }
+        
+        // Italic with _ (SINGLE Underscore - CORRECTED)
         if (e.key === '_') {
             e.preventDefault();
             const pos = editor.selectionStart;
             const sel = editor.value.substring(pos, editor.selectionEnd);
-            editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-            editor.selectionStart = editor.selectionEnd = pos + 2;
+            editor.setRangeText('_' + sel + '_', pos, pos + sel.length, 'end');
+            editor.selectionStart = editor.selectionEnd = pos + 1;
             editor.dispatchEvent(new Event('input'));
             return;
         }
+        
+        // All other bracket pairs
         if (pairs[e.key]) {
             e.preventDefault();
             const pos = editor.selectionStart;
@@ -612,10 +620,6 @@ function applyLanguage(lang) {
     localStorage.setItem(LANGUAGE_KEY, lang);
     document.documentElement.lang = lang;
     if (pageTitle) pageTitle.textContent = translations[lang].pageTitle;
-    document.querySelectorAll('[data-lang-key]').forEach(btn => {
-        const key = btn.getAttribute('data-lang-key');
-        if (translations[lang][key]) btn.textContent = translations[lang][key];
-    });
         document.querySelectorAll('.stat-label').forEach((label, idx) => {
         const keys = ['chars', 'words', 'paragraphs'];
         if (keys[idx]) label.textContent = translations[lang][keys[idx]];
