@@ -7,17 +7,85 @@ const LANGUAGE_KEY = 'lumo-editor-language';
 const STATS_KEY = 'lumo-editor-stats-mode';
 const AUTO_CLOSE_KEY = 'lumo-editor-auto-close';
 const WRAP_KEY = 'lumo-editor-word-wrap';
+const LINE_NUMBERS_KEY = 'lumo-editor-line-numbers';
+const HAS_VISITED_KEY = 'lumo-editor-has-visited';
 
-const APP_VERSION = "1.0.8";
-const LAST_UPDATE_DATE = "11/06/2026";
+const APP_VERSION = "1.0.9";
+const LAST_UPDATE_DATE = "13/06/2026";
 
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'el';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
 let currentStatsMode = localStorage.getItem(STATS_KEY) || 'md-clean';
 let autoCloseEnabled = false;
 let wordWrapEnabled = true;
+let lineNumbersEnabled = false;
 let currentViewMode = 'split';
 const WORDS_PER_MINUTE = 200;
+
+// =============================================
+// DEMO CONTENT
+// =============================================
+const DEMO_CONTENT = `# 🎉 Καλώς ήρθατε στον Markdown Editor!
+
+Ένα απλό, γρήγορο και **private** εργαλείο γραφής.
+
+---
+
+## ✍️ Βασική Σύνταξη
+
+### Έντονο & Πλάγιο
+- **Αυτό είναι έντονο** με διπλό αστέρισκο
+- _Αυτό είναι πλάγιο_ με underscore
+- ~~Αυτό είναι διαγραμμένο~~ με διπλή περισπωμένη
+
+### Κώδικας
+Inline: \`const x = 42;\`
+
+Μπλοκ κώδικα:
+
+\`\`\`javascript
+function greet(name) {
+    return \`Hello, \${name}!\`;
+}
+console.log(greet("Χρήστο"));
+\`\`\`
+
+### Λίστες
+
+#### Bullets
+- Πρώτο στοιχείο
+- Δεύτερο στοιχείο
+  - Υποστοιχείο με εσοχή
+- Τρίτο στοιχείο
+
+#### Αυτόματη Αρίθμηση
+1. Γράφεις "1. " και πατάς Enter
+2. Ο επόμενος αριθμός μπαίνει αυτόματα
+3. Και συνεχίζει...
+
+### Blockquote
+> Η απλότητα είναι η απόλυτη πολυπλοκότητα.
+> — Leonardo da Vinci
+
+### Σύνδεσμοι & Εικόνες
+[Markdown Guide](https://www.markdownguide.org/)
+
+---
+
+## 🛠️ Λειτουργίες Επεξεργαστή
+
+| Κουμπί | Λειτουργία |
+|--------|------------|
+| ☀️/🌙  | Εναλλαγή θέματος |
+| ⦿      | Focus Mode |
+| 🔄     | Επαναφορά Demo |
+| ⊕      | Αρίθμηση γραμμών |
+| W      | Word Wrap |
+
+---
+
+💡 **Tip:** Δεξί κλικ για custom μενού. Ctrl+B για Bold, Ctrl+I για Italic.
+`;
 
 const translations = {
     el: {
@@ -37,6 +105,8 @@ const translations = {
         toastLoaded: 'Το αρχείο φορτώθηκε επιτυχώς.',
         toastCopied: 'Το κείμενο αντιγράφηκε ως HTML.',
         toastCleared: 'Το περιεχόμενο εκκαθαρίστηκε.',
+        toastDemoReset: 'Demo επαναφέρθηκε!',
+        toastWelcome: '👋 Καλώς ήρθατε! Ξεκινήστε την επεξεργασία!',
         ctxBold: 'Έντονο', ctxItalic: 'Πλάγιο', ctxStrike: 'Διαγράμμιση',
         ctxLink: 'Σύνδεσμος', ctxCopyHTML: 'Αντιγραφή ως HTML', ctxCut: 'Αποκοπή', ctxCopy: 'Αντιγραφή', ctxPaste: 'Επικόλληση'
     },
@@ -57,6 +127,8 @@ const translations = {
         toastLoaded: 'File loaded successfully.',
         toastCopied: 'Text copied as HTML.',
         toastCleared: 'Content cleared.',
+        toastDemoReset: 'Demo restored!',
+        toastWelcome: '👋 Welcome! Start editing!',
         ctxBold: 'Bold', ctxItalic: 'Italic', ctxStrike: 'Strikethrough',
         ctxLink: 'Link', ctxCopyHTML: 'Copy as HTML', ctxCut: 'Cut', ctxCopy: 'Copy', ctxPaste: 'Paste'
     }
@@ -66,30 +138,30 @@ const tips = {
     el: [
         '💡 Χρησιμοποίησε `#` για τίτλους (# H1, ## H2, ### H3)',
         '💡 Έντονο κείμενο με `**κείμενο**`',
-        '💡 Πλάγιο κείμενο με `*κείμενο*`',
+        '💡 Πλάγιο κείμενο με `_κείμενο_`',
         '💡 Συνδέσμους με `[κείμενο](url)`',
         '💡 Λίστες ξεκινούν με `-` ή `*`',
         '💡 Κώδικας inline: `code`',
         '💡 Blockquote: `> κείμενο`',
-        '💡 Η τοπική αποθήκευση διατηρεί τα κείμενά σου',
+        '💡 Αρίθμηση γραμμών με το κουμπί ⊕',
+        '💡 🔄 Επαναφορά Demo κειμένου',
         '💡 Active Focus Mode με το κουμπί ⦿',
-        '💡 Activate MD Clean Stats για καθαρή καταμέτρηση λέξεων',
-        '💡 Στο Live mode πάτα κλικ στο κείμενο για να γράψεις',
-        '💡 Χρησιμοποίησε Ctrl+B για Bold, Ctrl+I για Italic'
+        '💡 Στο Live mode πάτα κλικ για να γράψεις',
+        '💡 Ctrl+B για Bold, Ctrl+I για Italic'
     ],
     en: [
         '💡 Use `#` for headings (# H1, ## H2, ### H3)',
         '💡 Bold text with `**text**`',
-        '💡 Italic text with `*text*`',
+        '💡 Italic text with `_text_`',
         '💡 Links with `[text](url)`',
         '💡 Lists start with `-` or `*`',
         '💡 Inline code: `code`',
         '💡 Blockquote: `> text`',
-        '💡 Local storage keeps your texts safe',
+        '💡 Toggle line numbers with ⊕ button',
+        '💡 🔄 Reset demo content anytime',
         '💡 Activate Focus Mode with ⦿ button',
-        '💡 Activate MD Clean Stats for word count without syntax',
         '💡 In Live mode click text to edit',
-        '💡 Use Ctrl+B for Bold, Ctrl+I for Italic'
+        '💡 Ctrl+B for Bold, Ctrl+I for Italic'
     ]
 };
 
@@ -130,6 +202,10 @@ const cursorLineEl = document.getElementById('cursor-line');
 const cursorColEl = document.getElementById('cursor-col');
 const toastContainer = document.getElementById('toast-container');
 const versionInfo = document.getElementById('version-info');
+const resetDemoBtn = document.getElementById('reset-demo-btn');
+const lineNumbersToggle = document.getElementById('line-numbers-toggle');
+const lineNumbersEl = document.getElementById('line-numbers');
+const editorWrapper = document.getElementById('editor-wrapper');
 
 // =============================================
 // TOAST NOTIFICATION SYSTEM
@@ -152,17 +228,90 @@ function showToast(message, type = 'info') {
 }
 
 // =============================================
+// LINE NUMBERS
+// =============================================
+function updateLineNumbers() {
+    if (!lineNumbersEl || !editor) return;
+    const lines = editor.value.split('\n');
+    const totalLines = lines.length;
+    
+    // Get current cursor line for highlighting
+    const cursorPos = editor.selectionStart;
+    const textUpToCursor = editor.value.substring(0, cursorPos);
+    const currentLine = textUpToCursor.split('\n').length;
+    
+    let html = '';
+    for (let i = 1; i <= totalLines; i++) {
+        const isActive = (i === currentLine) ? ' active-line' : '';
+        html += `<span class="${isActive}">${i}</span>`;
+    }
+    lineNumbersEl.innerHTML = html;
+}
+
+function toggleLineNumbers() {
+    lineNumbersEnabled = !lineNumbersEnabled;
+    if (editorWrapper) {
+        editorWrapper.classList.toggle('show-line-numbers', lineNumbersEnabled);
+    }
+        // Line Numbers Toggle (Now a Checkbox in toolbar)
+    if (lineNumbersToggle) {
+        lineNumbersToggle.checked = lineNumbersEnabled; // Set initial state
+        lineNumbersToggle.addEventListener('change', e => {
+            lineNumbersEnabled = e.target.checked;
+            localStorage.setItem(LINE_NUMBERS_KEY, lineNumbersEnabled);
+            if (editorWrapper) editorWrapper.classList.toggle('show-line-numbers', lineNumbersEnabled);
+            showToast(lineNumbersEnabled 
+                ? (currentLanguage === 'el' ? 'Αρίθμηση Γραμμών: ON' : 'Line Numbers: ON') 
+                : (currentLanguage === 'el' ? 'Αρίθμηση Γραμμών: OFF' : 'Line Numbers: OFF'), 
+            'info');
+            if (lineNumbersEnabled) updateLineNumbers();
+        });
+    }
+    localStorage.setItem(LINE_NUMBERS_KEY, lineNumbersEnabled);
+    if (lineNumbersEnabled) updateLineNumbers();
+    showToast(lineNumbersEnabled 
+        ? (currentLanguage === 'el' ? 'Αρίθμηση Γραμμών: ON' : 'Line Numbers: ON') 
+        : (currentLanguage === 'el' ? 'Αρίθμηση Γραμμών: OFF' : 'Line Numbers: OFF'), 
+    'info');
+}
+
+// Sync scroll between line numbers and editor
+function syncScroll() {
+    if (lineNumbersEl && editor) {
+        lineNumbersEl.scrollTop = editor.scrollTop;
+    }
+}
+
+// =============================================
 // INITIALIZATION
 // =============================================
 function init() {
     if (!editor || !pageTitle) { console.error("Critical elements not found."); return; }
 
+    // Load content: saved OR demo for first-time
+    const hasVisited = localStorage.getItem(HAS_VISITED_KEY);
     const savedContent = localStorage.getItem(STORAGE_KEY);
-    if (savedContent) editor.value = savedContent;
     
+    if (savedContent && savedContent.trim() !== '') {
+        editor.value = savedContent;
+    } else {
+        editor.value = DEMO_CONTENT;
+        localStorage.setItem(STORAGE_KEY, DEMO_CONTENT);
+    }
+    
+    if (!hasVisited) {
+        localStorage.setItem(HAS_VISITED_KEY, 'true');
+        setTimeout(() => showToast(translations[currentLanguage].toastWelcome, 'info'), 500);
+    }
+    
+    // Settings
     wordWrapEnabled = localStorage.getItem(WRAP_KEY) !== 'false';
     editor.style.whiteSpace = wordWrapEnabled ? 'pre-wrap' : 'pre';
     if(wordWrapBtn) wordWrapBtn.classList.toggle('active', wordWrapEnabled);
+
+    lineNumbersEnabled = localStorage.getItem(LINE_NUMBERS_KEY) === 'true';
+    if (editorWrapper) editorWrapper.classList.toggle('show-line-numbers', lineNumbersEnabled);
+    if (lineNumbersToggle) lineNumbersToggle.classList.toggle('active', lineNumbersEnabled);
 
     applyTheme(currentTheme);
     applyLanguage(currentLanguage);
@@ -179,6 +328,7 @@ function init() {
     updatePreview();
     updateStats();
     updateCursorPosition();
+    if (lineNumbersEnabled) updateLineNumbers();
     
     if (versionInfo) versionInfo.textContent = `V${APP_VERSION} | ${LAST_UPDATE_DATE}`;
     
@@ -274,11 +424,12 @@ window.insertFormat = function(format) {
     updatePreview();
     updateStats();
     updateCursorPosition();
+    if (lineNumbersEnabled) updateLineNumbers();
     localStorage.setItem(STORAGE_KEY, editor.value);
 };
 
 // =============================================
-// KEYBOARD EVENT HANDLER (NUMBERED LIST LOGIC)
+// KEYBOARD EVENT HANDLER
 // =============================================
 function handleEditorKeydown(e) {
     if (e.key === 'Enter') {
@@ -287,7 +438,6 @@ function handleEditorKeydown(e) {
         const lines = textUpToCursor.split('\n');
         const lastLine = lines[lines.length - 1];
         
-        // Numbered list: matches "1. " with or without text after
         const numMatch = /^(\s*)(\d+)\.\s/.exec(lastLine);
         if (numMatch) {
             e.preventDefault();
@@ -300,7 +450,6 @@ function handleEditorKeydown(e) {
             return;
         }
         
-        // Bullet list
         const bulletMatch = /^(\s*)[-*]\s/.exec(lastLine);
         if (bulletMatch) {
             e.preventDefault();
@@ -335,13 +484,12 @@ function setViewMode(mode) {
             pageBody.classList.add('preview-only', 'read-only'); 
             if(modePreview) modePreview.classList.add('active');
             break;
-        default: // split
+        default: 
             pageBody.classList.add('split-mode'); 
             if(modeSplit) modeSplit.classList.add('active');
             break;
     }
     
-    // Stats ALWAYS VISIBLE in all modes
     if(statsBar) statsBar.style.display = 'flex';
 }
 
@@ -356,11 +504,13 @@ function setupEventListeners() {
         updatePreview();
         updateStats();
         updateCursorPosition();
+        if (lineNumbersEnabled) updateLineNumbers();
     });
     
     editor.addEventListener('keydown', handleEditorKeydown);
-    editor.addEventListener('keyup', updateCursorPosition);
-    editor.addEventListener('click', updateCursorPosition);
+        editor.addEventListener('keyup', () => { updateCursorPosition(); if (lineNumbersEnabled) updateLineNumbers(); });
+    editor.addEventListener('click', () => { updateCursorPosition(); if (lineNumbersEnabled) updateLineNumbers(); });
+    editor.addEventListener('scroll', syncScroll); // Sync line numbers scroll
 
     if (themeToggle) themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
     if (langToggle) langToggle.addEventListener('click', () => applyLanguage(currentLanguage === 'el' ? 'en' : 'el'));
@@ -373,6 +523,21 @@ function setupEventListeners() {
     if (modeFocus) modeFocus.addEventListener('click', () => {
         toggleFocusMode();
         if (pageBody.classList.contains('focus-mode')) showFocusToast();
+    });
+
+    if (resetDemoBtn) resetDemoBtn.addEventListener('click', () => {
+        if (confirm(currentLanguage === 'el' 
+            ? 'Είστε σίγουροι ότι θέλετε να επαναφέρετε το κείμενο στο Demo;\n(Ό,τι έχετε γράψει θα χαθεί)'
+            : 'Are you sure you want to reset to Demo?\n(Your current work will be lost)')) {
+            editor.value = DEMO_CONTENT;
+            localStorage.setItem(STORAGE_KEY, DEMO_CONTENT);
+            updatePreview();
+            updateStats();
+            updateCursorPosition();
+            if (lineNumbersEnabled) updateLineNumbers();
+            showToast(translations[currentLanguage].toastDemoReset, 'success');
+            editor.focus();
+        }
     });
     
     if (mdStatsToggle) mdStatsToggle.addEventListener('change', e => {
@@ -397,6 +562,10 @@ function setupEventListeners() {
             localStorage.setItem(WRAP_KEY, wordWrapEnabled);
             showToast(wordWrapEnabled ? 'Word Wrap: ON' : 'Word Wrap: OFF', 'info');
         });
+    }
+
+    if (lineNumbersToggle) {
+        lineNumbersToggle.addEventListener('click', toggleLineNumbers);
     }
 
     if (exportMd) exportMd.addEventListener('click', () => { downloadFile(editor.value, 'document.md', 'text/markdown'); showToast(translations[currentLanguage].toastExportMD, 'success'); });
@@ -428,6 +597,7 @@ function setupEventListeners() {
                 editor.value = '';
                 localStorage.setItem(STORAGE_KEY, '');
                 updatePreview(); updateStats(); updateCursorPosition();
+                if (lineNumbersEnabled) updateLineNumbers();
                 editor.focus();
                 showToast(translations[currentLanguage].toastCleared, 'warning');
             }
@@ -468,7 +638,7 @@ function setupEventListeners() {
         const menuHTML = `
             <div class="custom-context-menu" style="position:fixed; top:${e.clientY}px; left:${e.clientX}px; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.2); min-width:180px; z-index:9999; overflow:hidden;">
                 <div class="ctx-item" onclick="insertFormat('**')"><span>🔶</span> ${t.ctxBold}</div>
-                <div class="ctx-item" onclick="insertFormat('*')"><span>🔸</span> ${t.ctxItalic}</div>
+                <div class="ctx-item" onclick="insertFormat('_')"><span>🔸</span> ${t.ctxItalic}</div>
                 <div class="ctx-item" onclick="insertFormat('~~')"><span>❌</span> ${t.ctxStrike}</div>
                 <div class="ctx-item" onclick="insertFormat('[link](url)')"><span>🔗</span> ${t.ctxLink}</div>
                 <div class="ctx-divider"></div>
@@ -491,9 +661,7 @@ function setupEventListeners() {
         setTimeout(() => document.addEventListener('click', closeMenu), 10);
     });
 
-    // ============================================
-    // AUTO-CLOSE BRACKETS (FIXED: Single Underscore)
-    // ============================================
+    // Auto-Close Brackets
     editor.addEventListener('keydown', function(e) {
         if (!autoCloseEnabled) return;
         
@@ -503,7 +671,6 @@ function setupEventListeners() {
         
         const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
         
-        // Bold with * (Double Asterisks)
         if (e.key === '*') {
             e.preventDefault();
             const pos = editor.selectionStart;
@@ -514,7 +681,6 @@ function setupEventListeners() {
             return;
         }
         
-        // Italic with _ (SINGLE Underscore - CORRECTED)
         if (e.key === '_') {
             e.preventDefault();
             const pos = editor.selectionStart;
@@ -525,7 +691,6 @@ function setupEventListeners() {
             return;
         }
         
-        // All other bracket pairs
         if (pairs[e.key]) {
             e.preventDefault();
             const pos = editor.selectionStart;
@@ -582,6 +747,7 @@ function handleFileOpen(e) {
         editor.value = event.target.result;
         localStorage.setItem(STORAGE_KEY, editor.value);
         updatePreview(); updateStats(); updateCursorPosition();
+        if (lineNumbersEnabled) updateLineNumbers();
         fileInput.value = '';
         showToast(translations[currentLanguage].toastLoaded, 'success');
     };
@@ -620,7 +786,11 @@ function applyLanguage(lang) {
     localStorage.setItem(LANGUAGE_KEY, lang);
     document.documentElement.lang = lang;
     if (pageTitle) pageTitle.textContent = translations[lang].pageTitle;
-        document.querySelectorAll('.stat-label').forEach((label, idx) => {
+    document.querySelectorAll('[data-lang-key]').forEach(btn => {
+        const key = btn.getAttribute('data-lang-key');
+        if (translations[lang][key]) btn.textContent = translations[lang][key];
+    });
+    document.querySelectorAll('.stat-label').forEach((label, idx) => {
         const keys = ['chars', 'words', 'paragraphs'];
         if (keys[idx]) label.textContent = translations[lang][keys[idx]];
     });
@@ -667,7 +837,7 @@ function populateCheatsheet() {
     
     html += `<div class="cheatsheet-section" id="shortcuts-section"><h3>🔑 ${t.shortcuts}</h3><table class="shortcuts-table">`;
     html += `<tr><td><code>Ctrl+B</code></td><td><strong>${t.bold}</strong></td><td>**text**</td></tr>`;
-    html += `<tr><td><code>Ctrl+I</code></td><td><strong>${t.italic}</strong></td><td>*text*</td></tr>`;
+    html += `<tr><td><code>Ctrl+I</code></td><td><strong>${t.italic}</strong></td><td>_text_</td></tr>`;
     html += `<tr><td><code>Ctrl+H</code></td><td><strong>Heading</strong></td><td># Heading</td></tr>`;
     html += `<tr><td><code>Ctrl+K</code></td><td><strong>${t.link}</strong></td><td>[text](url)</td></tr>`;
     html += `<tr><td><code>Ctrl+L</code></td><td><strong>${t.list}</strong></td><td>- item</td></tr>`;
@@ -694,7 +864,7 @@ const cheatsheetData = {
             { title: 'Κεφαλίδα 2', example: '## Κεφαλίδα', desc: 'Δύο ##' },
             { title: 'Κεφαλίδα 3', example: '### Κεφαλίδα', desc: 'Τρία ###' },
             { title: 'Έντονο', example: '**τίτλος**', desc: 'Δύο αστερίσκοι' },
-            { title: 'Πλάγιο', example: '*τίτλος*', desc: 'Ένας αστέρισκος' },
+            { title: 'Πλάγιο', example: '_τίτλος_', desc: 'Ένα underscore' },
             { title: 'Σύνδεσμος', example: '[Τίτλος](url)', desc: '[Τίτλος](URL)' },
             { title: 'Λίστα', example: '- Στοιχείο', desc: 'Ξεκινά με -' },
             { title: 'Αριθμημένη', example: '1. Στοιχείο', desc: 'Ξεκινά με 1.' }
@@ -716,7 +886,7 @@ const cheatsheetData = {
             { title: 'Heading 2', example: '## Heading', desc: 'Two ##' },
             { title: 'Heading 3', example: '### Heading', desc: 'Three ###' },
             { title: 'Bold', example: '**text**', desc: 'Double asterisks' },
-            { title: 'Italic', example: '*text*', desc: 'Single asterisk' },
+            { title: 'Italic', example: '_text_', desc: 'Single underscore' },
             { title: 'Link', example: '[Title](url)', desc: '[Text](URL)' },
             { title: 'List', example: '- Item', desc: 'Starts with -' },
             { title: 'Ordered', example: '1. Item', desc: 'Starts with number.' }
@@ -747,7 +917,7 @@ function updateStats() {
             .replace(/^\s*[-*+]\s+/gm, '')
             .replace(/^\s*\d+\.\s+/gm, '')
             .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/_(.*?)_/g, '$1') // Corrected for single underscore
             .replace(/!\[.*?\]\(.*?\)/g, '')
             .replace(/\[(.*?)\]\(.*?\)/g, '$1')
             .replace(/`(.*?)`/g, '$1')

@@ -12,6 +12,8 @@
     --hover-bg: rgba(59, 130, 246, 0.1);
     --code-bg: #E5ECF4;
     --shadow-light: rgba(26, 43, 76, 0.08);
+    --ln-bg: #E9F0F7;
+    --ln-color: #8899AA;
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
@@ -31,6 +33,8 @@
     --hover-bg: rgba(96, 165, 250, 0.15);
     --code-bg: #1F2937;
     --shadow-light: rgba(0, 0, 0, 0.3);
+    --ln-bg: #0D1525;
+    --ln-color: #4B5563;
 }
 
 /* =============================================
@@ -55,7 +59,7 @@ html, body {
 ::selection { background: var(--accent-color); color: white; }
 
 /* =============================================
-   LAYOUT CONTAINER
+   LAYOUT CONTAINER (COMPLETED)
    ============================================= */
 .main-container {
     display: flex;
@@ -178,7 +182,72 @@ html, body {
 }
 
 /* =============================================
-   EDITOR PANELS
+   EDITOR WRAPPER & LINE NUMBERS (NEW!)
+   ============================================= */
+.editor-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+.line-numbers {
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-end;
+    padding: var(--spacing-md);
+    background: var(--ln-bg);
+    color: var(--ln-color);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    user-select: none;
+    min-width: 35px;
+    border-right: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+/* Active Line Number Styling */
+.line-numbers span.active-line {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+/* Show Line Numbers class */
+.show-line-numbers .line-numbers {
+    display: flex;
+}
+
+.editor-textarea {
+    flex: 1;
+    height: 100%;
+    padding: var(--spacing-md);
+    border: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    white-space: pre-wrap;
+    overflow-y: auto;
+}
+.editor-textarea:focus {
+    box-shadow: none;
+}
+.editor-textarea::selection {
+    background: rgba(59, 130, 246, 0.3);
+}
+
+/* Scroll sync for line numbers and editor handled in JS */
+
+/* =============================================
+   PREVIEW PANELS
    ============================================= */
 .panel {
     flex: 1;
@@ -189,28 +258,6 @@ html, body {
     width: 100%;
 }
 .panel.active { display: block; }
-
-.editor-textarea {
-    width: 100%;
-    height: 100%;
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    line-height: 1.6;
-    resize: none;
-    outline: none;
-    transition: all 0.2s ease;
-    white-space: pre-wrap;
-    overflow-y: auto;
-}
-.editor-textarea:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px var(--hover-bg);
-}
 
 .preview-wrapper {
     padding: var(--spacing-md);
@@ -236,38 +283,24 @@ html, body {
 .preview-wrapper s, .preview-wrapper del { text-decoration: line-through; color: var(--text-secondary); }
 
 /* =============================================
-   VIEW MODES (CORRECTED PREVIEW LOGIC)
+   VIEW MODES
    ============================================= */
-
-/* Split Mode: Δύο panels side by side */
 .split-mode .main-container { flex-direction: row; }
 .split-mode .panel:first-child { display: block !important; flex: 0 0 50%; }
 .split-mode .panel:last-child { display: block !important; flex: 0 0 50%; }
 
-/* Edit Only: Μόνο το Editor Panel */
 .edit-only .main-container { flex-direction: column; }
 .edit-only .panel:first-child { display: block !important; }
 
-/* Preview Only: ΕΝΙΑΙΟ ΠΛΑΙΣΙΟ (Όχι Split), Μόνο το Preview Panel ορατό */
-.preview-only .main-container { 
-    flex-direction: column; /* Ολόκληρο το ύψος στο preview */
-}
-.preview-only .panel:last-child { 
-    display: block !important; /* Εμφάνιση Preview */
-    width: 100%;
-    flex: 1;
-}
-.preview-only .panel:first-child { 
-    display: none !important; /* Απόκρυψη Editor */
-}
+.preview-only .main-container { flex-direction: column; }
+.preview-only .panel:last-child { display: block !important; width: 100%; flex: 1; }
+.preview-only .panel:first-child { display: none !important; }
 
 .live-mode .editor-textarea { border: 2px dashed var(--accent-color); background: transparent; }
 .live-editing .editor-textarea { border: 2px solid var(--accent-color); }
 .read-only .editor-textarea { pointer-events: none; opacity: 0.3; }
 
-/* =============================================
-   FOCUS MODE (FIXED: No push off-screen)
-   ============================================= */
+/* Focus Mode adjustments for Line Numbers */
 .focus-mode .top-bar,
 .focus-mode .toolbar,
 .focus-mode .stats-bar,
@@ -275,30 +308,17 @@ html, body {
     opacity: 0.08;
     transition: opacity 0.4s ease;
 }
-
 .focus-mode .top-bar:hover,
 .focus-mode .toolbar:hover,
 .focus-mode .stats-bar:hover,
-.focus-mode .footer:hover {
-    opacity: 1;
-}
-
-.focus-mode .main-container {
-    height: calc(100vh - 300px);
-}
-
-.focus-mode .editor-textarea {
-    border-color: transparent;
-    box-shadow: none;
-    font-size: 1rem;
-}
-
-.focus-mode .preview-wrapper {
-    border-color: transparent;
-}
+.focus-mode .footer:hover { opacity: 1; }
+.focus-mode .main-container { height: calc(100vh - 300px); }
+.focus-mode .editor-textarea { border-color: transparent; box-shadow: none; font-size: 1rem; }
+.focus-mode .preview-wrapper { border-color: transparent; }
+.focus-mode .line-numbers { opacity: 0.5; }
 
 /* =============================================
-   STATS BAR (ΚΕΝΤΡΑΡΙΣΜΕΝΟ & ΚΑΘΑΡΟ FRAME)
+   STATS BAR
    ============================================= */
 .stats-bar {
     display: flex;
@@ -313,7 +333,6 @@ html, body {
     margin: 0;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
 }
-
 .stats-row {
     display: flex;
     justify-content: center;
@@ -323,19 +342,8 @@ html, body {
     width: 100%;
     white-space: nowrap;
 }
-
-.main-stats {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.meta-stats {
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    opacity: 0.85;
-}
-
+.main-stats { font-weight: 600; color: var(--text-primary); }
+.meta-stats { font-weight: 500; color: var(--text-secondary); font-size: 0.78rem; opacity: 0.85; }
 .stats-row span {
     display: inline-flex;
     align-items: center;
@@ -346,20 +354,9 @@ html, body {
     background: rgba(0, 0, 0, 0.03);
     border: 1px solid transparent;
 }
-
-.stats-row span:hover {
-    background: rgba(0, 0, 0, 0.06);
-    border-color: var(--border-color);
-}
-
-[data-theme="dark"] .stats-row span {
-    background: rgba(255, 255, 255, 0.04);
-}
-
-[data-theme="dark"] .stats-row span:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
+.stats-row span:hover { background: rgba(0, 0, 0, 0.06); border-color: var(--border-color); }
+[data-theme="dark"] .stats-row span { background: rgba(255, 255, 255, 0.04); }
+[data-theme="dark"] .stats-row span:hover { background: rgba(255, 255, 255, 0.08); }
 .stats-row strong {
     color: var(--accent-color);
     font-weight: 700;
@@ -368,25 +365,9 @@ html, body {
     text-align: center;
     font-feature-settings: "tnum";
 }
-
-.stat-label {
-    font-size: 0.75rem;
-    font-weight: 400;
-    opacity: 0.7;
-}
-
-#cursor-line, #cursor-col {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    min-width: 1ch;
-    text-align: right;
-    color: var(--text-secondary);
-}
-
-.meta-stats > span strong {
-    color: var(--text-primary);
-    opacity: 0.9;
-}
+.stat-label { font-size: 0.75rem; font-weight: 400; opacity: 0.7; }
+#cursor-line, #cursor-col { font-family: var(--font-mono); font-variant-numeric: tabular-nums; min-width: 1ch; text-align: right; color: var(--text-secondary); }
+.meta-stats > span strong { color: var(--text-primary); opacity: 0.9; }
 
 /* =============================================
    TOAST NOTIFICATIONS
@@ -517,6 +498,7 @@ html, body {
 @media print {
     .top-bar, .toolbar, .stats-bar, .footer, #tip-banner { display: none !important; }
     .main-container { height: auto; padding: 0; }
-    .editor-textarea { border: none; font-size: 12pt; }
+    .editor-textarea, .line-numbers { border: none; font-size: 12pt; }
     .preview-wrapper { font-size: 12pt; }
+    .show-line-numbers .line-numbers { display: none; } /* Don't print line numbers if not needed */
 }

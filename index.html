@@ -16,6 +16,7 @@
             <button id="lang-toggle" class="icon-btn" title="Switch Language">EL/EN</button>
             <button id="theme-toggle" class="icon-btn" title="Toggle Theme">☀️/🌙</button>
             <button id="mode-focus" class="icon-btn" title="Focus Mode">⦿</button>
+            <button id="reset-demo-btn" class="icon-btn" title="Reset to Demo / Επαναφορά Demo">🔄</button>
             <button id="clear-content-btn" class="icon-btn" title="Clear Content">🗑️</button>
             <button id="open-file-btn" class="icon-btn" title="Open File">📂</button>
             <input type="file" id="file-input" accept=".md,.txt" style="display:none;">
@@ -30,6 +31,7 @@
         </div>
     </header>
 
+        <!-- Toolbar -->
     <div class="toolbar">
         <div class="mode-group">
             <button id="mode-edit" class="mode-btn active" data-lang-key="editMode">Επεξεργασία</button>
@@ -37,30 +39,40 @@
             <button id="mode-live" class="mode-btn" title="Live Preview" data-lang-key="liveMode">👁️ Live</button>
             <button id="mode-split" class="mode-btn" data-lang-key="splitMode">Διπλό Panel</button>
         </div>
+        
         <div class="stats-toggle-group">
-            <label title="MD Clean vs Raw" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
+            <label title="MD Clean vs Raw / Καθαρή ή Πλήρης μέτρηση" style="font-size:0.8rem; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="md-stats-toggle" checked> 
                 <span data-lang-key="cleanStats">MD Clean</span>
             </label>
-            <label title="Auto-Close symbols" style="font-size:0.8rem; padding-left:10px; border-left:1px solid var(--border-color); margin-left:5px; display:flex; align-items:center; gap:5px;">
+            
+            <label title="Auto-Close symbols / Αυτόματο κλείσιμο συμβόλων" style="font-size:0.8rem; padding-left:10px; border-left:1px solid var(--border-color); margin-left:5px; display:flex; align-items:center; gap:5px;">
                 <input type="checkbox" id="auto-close-toggle"> 
                 <span>Auto-Close</span>
             </label>
+
+            <!-- NEW: Line Numbers Checkbox -->
+            <label title="Toggle Line Numbers / Εναλλαγή Αρίθμησης Γραμμών" style="font-size:0.8rem; padding-left:10px; border-left:1px solid var(--border-color); margin-left:5px; display:flex; align-items:center; gap:5px;">
+                <input type="checkbox" id="line-numbers-toggle"> 
+                <span>Line Nos</span>
+            </label>
         </div>
+
         <div class="format-bar" id="format-bar">
-            <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
-            <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
-            <button class="fmt-btn" title="Strikethrough" onclick="insertFormat('~~')">S̶</button>
-            <button class="fmt-btn" id="word-wrap-toggle" title="Toggle Word Wrap">W</button>
-            <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
-            <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
-            <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
-            <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
-            <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
-            <button class="fmt-btn" id="numbered-list-btn" title="Numbered List" onclick="insertFormat('1. ')">1.</button>
-            <button class="fmt-btn" title="Quote" onclick="insertFormat('> ')">"</button>
-            <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
-            <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
+             <!-- REMOVED: <button class="fmt-btn" id="line-numbers-toggle">⊕</button> was here -->
+             <button class="fmt-btn" title="Bold (Ctrl+B)" onclick="insertFormat('**')">B</button>
+             <button class="fmt-btn" title="Italic (Ctrl+I)" onclick="insertFormat('*')">I</button>
+             <button class="fmt-btn" title="Strikethrough" onclick="insertFormat('~~')">S̶</button>
+             <button class="fmt-btn" id="word-wrap-toggle" title="Toggle Word Wrap">W</button>
+             <button class="fmt-btn" title="Heading 1" onclick="insertFormat('# ')">H1</button>
+             <button class="fmt-btn" title="Heading 2" onclick="insertFormat('## ')">H2</button>
+             <button class="fmt-btn" title="Heading 3" onclick="insertFormat('### ')">H3</button>
+             <button class="fmt-btn" title="Link" onclick="insertFormat('[link](url)')">🔗</button>
+             <button class="fmt-btn" title="List" onclick="insertFormat('- ')">•</button>
+             <button class="fmt-btn" id="numbered-list-btn" title="Numbered List" onclick="insertFormat('1. ')">1.</button>
+             <button class="fmt-btn" title="Quote" onclick="insertFormat('> ')">"</button>
+             <button class="fmt-btn" title="Code Block" onclick="insertFormat('```\n\ncode\n```')">&lt;/&gt;</button>
+             <button class="fmt-btn" title="Horizontal Line" onclick="insertFormat('\n---\n')">—</button>
         </div>
     </div>
 
@@ -70,7 +82,11 @@
 
     <main class="main-container">
         <div id="edit-panel" class="panel active">
-            <textarea id="editor" class="editor-textarea" placeholder="Write your markdown here..." spellcheck="false"></textarea>
+            <!-- Editor Wrapper for Line Numbers -->
+            <div class="editor-wrapper" id="editor-wrapper">
+                <div class="line-numbers" id="line-numbers"></div>
+                <textarea id="editor" class="editor-textarea" placeholder="Write your markdown here..." spellcheck="false"></textarea>
+            </div>
         </div>
         <div id="preview-panel" class="panel">
             <div id="preview-content" class="preview-wrapper"></div>
