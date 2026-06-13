@@ -236,18 +236,30 @@ html, body {
 .preview-wrapper s, .preview-wrapper del { text-decoration: line-through; color: var(--text-secondary); }
 
 /* =============================================
-   VIEW MODES
+   VIEW MODES (CORRECTED PREVIEW LOGIC)
    ============================================= */
+
+/* Split Mode: Δύο panels side by side */
 .split-mode .main-container { flex-direction: row; }
 .split-mode .panel:first-child { display: block !important; flex: 0 0 50%; }
 .split-mode .panel:last-child { display: block !important; flex: 0 0 50%; }
 
+/* Edit Only: Μόνο το Editor Panel */
 .edit-only .main-container { flex-direction: column; }
 .edit-only .panel:first-child { display: block !important; }
 
-.preview-only .main-container { flex-direction: column; }
-.preview-only .panel:last-child { display: block !important; }
-.preview-only .editor-textarea { pointer-events: none; opacity: 0.3; }
+/* Preview Only: ΕΝΙΑΙΟ ΠΛΑΙΣΙΟ (Όχι Split), Μόνο το Preview Panel ορατό */
+.preview-only .main-container { 
+    flex-direction: column; /* Ολόκληρο το ύψος στο preview */
+}
+.preview-only .panel:last-child { 
+    display: block !important; /* Εμφάνιση Preview */
+    width: 100%;
+    flex: 1;
+}
+.preview-only .panel:first-child { 
+    display: none !important; /* Απόκρυψη Editor */
+}
 
 .live-mode .editor-textarea { border: 2px dashed var(--accent-color); background: transparent; }
 .live-editing .editor-textarea { border: 2px solid var(--accent-color); }

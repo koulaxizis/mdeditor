@@ -142,7 +142,6 @@ function showToast(message, type = 'info') {
     else if (type === 'error') icon = '❌';
     else if (type === 'warning') icon = '⚠️';
     else icon = 'ℹ️';
-    
     toast.innerHTML = `${icon} ${message}`;
     toastContainer.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
@@ -190,11 +189,9 @@ function init() {
 function showStickyTip() {
     if (!tipBanner || !tipText) return;
     if (localStorage.getItem('tip-closed') === 'true') { tipBanner.classList.add('hidden'); return; }
-    
     const tipsForLang = tips[currentLanguage];
     const randomIndex = Math.floor(Math.random() * tipsForLang.length);
     tipText.textContent = tipsForLang[randomIndex];
-    
     if (!document.querySelector('.close-tip-btn')) {
         const btn = document.createElement('span');
         btn.textContent = '✕';
@@ -211,14 +208,12 @@ function showStickyTip() {
 // =============================================
 window.insertFormat = function(format) {
     if (!editor) return;
-    
     const startPos = editor.selectionStart;
     const endPos = editor.selectionEnd;
     const text = editor.value;
     const before = text.substring(0, startPos);
     const selected = text.substring(startPos, endPos);
     const after = text.substring(endPos);
-    
     let newText, newCursorStart, newCursorEnd;
     
     if (format === '- ') {
@@ -235,13 +230,8 @@ window.insertFormat = function(format) {
             newCursorEnd = newCursorStart + selected.length;
         }
     } else if (format === '1. ') {
-        // FIXED: Auto-increment logic now works even if there is text after the number
-        const lines = before.split('\n');
-        const lastLine = lines[lines.length - 1];
-        // Regex: Matches any line ending with "number. " optionally followed by more text
-        // But we only trigger on Enter key in handleEditorKeydown. Here we just insert "1. "
         newText = before + format + selected + after;
-        newCursorStart = startPos + 2;
+        newCursorStart = startPos + 3;
         newCursorEnd = newCursorStart + selected.length;
     } else if (format.includes('# ') && !format.includes('[')) {
         const lines = selected.trim().split('\n').filter(l => l.trim());
@@ -288,7 +278,7 @@ window.insertFormat = function(format) {
 };
 
 // =============================================
-// KEYBOARD EVENT HANDLER (FIXED NUMBERING LOGIC)
+// KEYBOARD EVENT HANDLER (NUMBERED LIST LOGIC)
 // =============================================
 function handleEditorKeydown(e) {
     if (e.key === 'Enter') {
@@ -297,40 +287,20 @@ function handleEditorKeydown(e) {
         const lines = textUpToCursor.split('\n');
         const lastLine = lines[lines.length - 1];
         
-        // CHECK: Does the line end with "number. " possibly followed by spaces, but NO other text?
-        // Actually, user said: "if character follows number and period, it stops working".
-        // The previous regex was /^\s*(\d+)\.\s*$/. This requires END of string ($).
-        // If user typed "1. Hello" and pressed Enter, we want "2. ".
-        // So we check if the line STARTS with "number. " and ends with spaces or nothing.
-        // Wait, if I type "1. Hello", then hit Enter, I expect "2. ".
-        // The regex /^(\s*)(\d+)\.\s+(.*)$/ would capture everything.
-        // We only want to auto-increment if the line is effectively a list item.
-        
-        // Let's try: /^(\s*)(\d+)\.\s*$/.exec(lastLine) -> matches "1. ", "  1.  "
-        // If user types "1. Some text", this does NOT match $.
-        // BUT if user types "1. " and hits Enter, it matches.
-        // If user types "1. Text" and hits Enter, should it become "2. "? Usually yes in editors.
-        // Let's change regex to allow text after, but ensure it starts with the pattern.
-        // Actually, standard behavior: "1. Text" + Enter -> "2. ".
-        // Regex: /^(\s*)(\d+)\.\s/.exec(lastLine) -> captures "1. " anywhere at start.
-        // If it matches, we increment.
-        
+        // Numbered list: matches "1. " with or without text after
         const numMatch = /^(\s*)(\d+)\.\s/.exec(lastLine);
-        
         if (numMatch) {
             e.preventDefault();
-            const nextNum = parseInt(numMatch[2]) + 1;
-            // Preserve indentation from first group
             const indent = numMatch[1] || '';
+            const nextNum = parseInt(numMatch[2], 10) + 1;
             const insertText = `\n${indent}${nextNum}. `;
-            
             editor.setRangeText(insertText, pos, pos, 'end');
             editor.selectionStart = editor.selectionEnd = pos + insertText.length;
             editor.dispatchEvent(new Event('input'));
             return;
         }
         
-        // Bullet list logic
+        // Bullet list
         const bulletMatch = /^(\s*)[-*]\s/.exec(lastLine);
         if (bulletMatch) {
             e.preventDefault();
@@ -345,12 +315,11 @@ function handleEditorKeydown(e) {
 }
 
 // =============================================
-// VIEW MODE MANAGEMENT (FIXED: Stats ALWAYS Visible)
+// VIEW MODE MANAGEMENT
 // =============================================
 function setViewMode(mode) {
     currentViewMode = mode;
     pageBody.classList.remove('edit-only', 'preview-only', 'split-mode', 'live-mode', 'live-editing', 'read-only');
-    
     [modeEdit, modeLive, modePreview, modeSplit].forEach(m => m?.classList.remove('active'));
     
     switch (mode) {
@@ -365,7 +334,6 @@ function setViewMode(mode) {
         case 'preview': 
             pageBody.classList.add('preview-only', 'read-only'); 
             if(modePreview) modePreview.classList.add('active');
-            // Removed: statsBar.style.display = 'none';
             break;
         default: // split
             pageBody.classList.add('split-mode'); 
@@ -373,7 +341,7 @@ function setViewMode(mode) {
             break;
     }
     
-    // FORCE STATS TO BE VISIBLE IN ALL MODES
+    // Stats ALWAYS VISIBLE in all modes
     if(statsBar) statsBar.style.display = 'flex';
 }
 
@@ -444,9 +412,8 @@ function setupEventListeners() {
     if (cheatsheetModal) cheatsheetModal.addEventListener('click', e => { if (e.target === cheatsheetModal) cheatsheetModal.classList.add('hidden'); });
 
     if (preview?.parentElement) {
-        preview.parentElement.addEventListener('click', e => {
-            if (currentViewMode === 'live' && !pageBody.classList.contains('live-editing') && !e.target.closest('.toolbar') && !e.target.closest('.top-bar')) {
-                e.stopPropagation();
+        preview.parentElement.addEventListener('click', () => {
+            if (currentViewMode === 'live' && !pageBody.classList.contains('live-editing')) {
                 pageBody.classList.add('live-editing');
                 editor.focus();
                 editor.selectionStart = editor.selectionEnd = editor.value.length;
@@ -470,8 +437,6 @@ function setupEventListeners() {
     }
 
     document.addEventListener('keydown', e => {
-        const isEditorActive = document.activeElement === editor;
-        
         if (e.key === 'Escape') {
             if (pageBody.classList.contains('focus-mode')) {
                 toggleFocusMode();
@@ -488,7 +453,7 @@ function setupEventListeners() {
             }
         }
 
-        if (isEditorActive && (e.ctrlKey || e.metaKey)) {
+        if (document.activeElement === editor && (e.ctrlKey || e.metaKey)) {
             const key = e.key.toLowerCase();
             if (key === 'b') { e.preventDefault(); insertFormat('**'); }
             else if (key === 'i') { e.preventDefault(); insertFormat('*'); }
@@ -522,56 +487,85 @@ function setupEventListeners() {
         menu.innerHTML = menuHTML;
         document.body.appendChild(menu);
         const closeMenu = () => {
-            if (document.querySelector('.custom-context-menu')) {
-                document.querySelector('.custom-context-menu').remove();
-                document.removeEventListener('click', closeMenu);
-            }
+            const cm = document.querySelector('.custom-context-menu');
+            if (cm) { cm.remove(); document.removeEventListener('click', closeMenu); }
         };
         setTimeout(() => document.addEventListener('click', closeMenu), 10);
     });
 
     // Auto-Close Brackets
-    if (editor) {
-        editor.addEventListener('keydown', function(e) {
-            if (!autoCloseEnabled) return;
-            const isSpecialChar = ['_', '*'].includes(e.key);
-            if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
-            if (typeof e.key !== 'string' || e.key.length !== 1) return;
-            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
-            if (e.key === '*') {
-                e.preventDefault();
-                const pos = editor.selectionStart;
-                const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 2;
-                editor.dispatchEvent(new Event('input'));
-                return;
-            }
-            if (e.key === '_') {
-                e.preventDefault();
-                const pos = editor.selectionStart;
-                const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 2;
-                editor.dispatchEvent(new Event('input'));
-                return;
-            }
-            if (pairs[e.key]) {
-                e.preventDefault();
-                const pos = editor.selectionStart;
-                const sel = editor.value.substring(pos, editor.selectionEnd);
-                editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'end');
-                editor.selectionStart = editor.selectionEnd = pos + 1;
-                editor.dispatchEvent(new Event('input'));
-                return;
-            }
-        });
-    }
+    editor.addEventListener('keydown', function(e) {
+        if (!autoCloseEnabled) return;
+        const isSpecialChar = ['_', '*'].includes(e.key);
+        if (!isSpecialChar && (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey)) return;
+        if (typeof e.key !== 'string' || e.key.length !== 1) return;
+        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+        if (e.key === '*') {
+            e.preventDefault();
+            const pos = editor.selectionStart;
+            const sel = editor.value.substring(pos, editor.selectionEnd);
+            editor.setRangeText('**' + sel + '**', pos, pos + sel.length, 'end');
+            editor.selectionStart = editor.selectionEnd = pos + 2;
+            editor.dispatchEvent(new Event('input'));
+            return;
+        }
+        if (e.key === '_') {
+            e.preventDefault();
+            const pos = editor.selectionStart;
+            const sel = editor.value.substring(pos, editor.selectionEnd);
+            editor.setRangeText('__' + sel + '__', pos, pos + sel.length, 'end');
+            editor.selectionStart = editor.selectionEnd = pos + 2;
+            editor.dispatchEvent(new Event('input'));
+            return;
+        }
+        if (pairs[e.key]) {
+            e.preventDefault();
+            const pos = editor.selectionStart;
+            const sel = editor.value.substring(pos, editor.selectionEnd);
+            editor.setRangeText(e.key + sel + pairs[e.key], pos, pos + sel.length, 'end');
+            editor.selectionStart = editor.selectionEnd = pos + 1;
+            editor.dispatchEvent(new Event('input'));
+            return;
+        }
+    });
 }
 
 // =============================================
-// HELPER FUNCTIONS (CONCLUSION)
+// HELPER FUNCTIONS
 // =============================================
+function copyAsHTML() {
+    const htmlContent = marked.parse(editor.value);
+    navigator.clipboard.writeText(htmlContent).then(() => {
+        showToast(translations[currentLanguage].toastCopied, 'success');
+    }).catch(() => showToast(translations[currentLanguage].toastError, 'error'));
+}
+
+function execCmd(cmd) { document.execCommand(cmd); }
+
+function exportAsHTML() {
+    const htmlContent = marked.parse(editor.value);
+    const fullHTML = `<!DOCTYPE html>
+<html lang="${currentLanguage}">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown Document</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1 { border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
+        blockquote { border-left: 4px solid #3B82F6; padding-left: 1rem; color: #666; }
+        img { max-width: 100%; height: auto; border-radius: 4px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+        th { background: #f4f4f4; }
+        s, del { text-decoration: line-through; }
+    </style>
+</head>
+<body>${htmlContent}</body></html>`;
+    downloadFile(fullHTML, 'document.html', 'text/html');
+}
+
 function handleFileOpen(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -579,9 +573,7 @@ function handleFileOpen(e) {
     reader.onload = (event) => {
         editor.value = event.target.result;
         localStorage.setItem(STORAGE_KEY, editor.value);
-        updatePreview();
-        updateStats();
-        updateCursorPosition();
+        updatePreview(); updateStats(); updateCursorPosition();
         fileInput.value = '';
         showToast(translations[currentLanguage].toastLoaded, 'success');
     };
@@ -593,12 +585,9 @@ function updateCursorPosition() {
     if (!editor) return;
     const text = editor.value;
     const pos = editor.selectionStart;
-    const textUpToCursor = text.substring(0, pos);
-    const lines = textUpToCursor.split('\n');
-    const currentLine = lines.length;
-    const currentColumn = lines[lines.length - 1].length + 1;
-    if (cursorLineEl) cursorLineEl.textContent = currentLine;
-    if (cursorColEl) cursorColEl.textContent = currentColumn;
+    const lines = text.substring(0, pos).split('\n');
+    if (cursorLineEl) cursorLineEl.textContent = lines.length;
+    if (cursorColEl) cursorColEl.textContent = lines[lines.length - 1].length + 1;
 }
 
 function showFocusToast() {
@@ -627,7 +616,7 @@ function applyLanguage(lang) {
         const key = btn.getAttribute('data-lang-key');
         if (translations[lang][key]) btn.textContent = translations[lang][key];
     });
-    document.querySelectorAll('.stat-label').forEach((label, idx) => {
+        document.querySelectorAll('.stat-label').forEach((label, idx) => {
         const keys = ['chars', 'words', 'paragraphs'];
         if (keys[idx]) label.textContent = translations[lang][keys[idx]];
     });
